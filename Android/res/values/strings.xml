@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hmi</string>
+    <string name="script_list">Choose a script to play</string>
+    <string name="loading">正在加载…</string>
+    <string name="no_location">附近没有其它地点</string>
+    <string name="map_pick">地图选点</string>
+</resources>

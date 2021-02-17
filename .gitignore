@@ -1,0 +1,120 @@
+# Output directories
+/bin/*
+!/bin/**/
+!/bin/*.bat
+!/bin/*.sh
+/bin/*.app/
+/bin/*.app.dSYM/
+/bin/jit/
+/bin/Screenshots/
+/bin/tool/
+/include/
+/lib*/
+generated/
+/Source/Urho3D/tolua++-prefix/
+
+# Output files
+/Source/**/*.a
+/Source/ThirdParty/LuaJIT/src/host/buildvm
+/Source/ThirdParty/LuaJIT/src/host/buildvm_arch.h
+/Source/ThirdParty/LuaJIT/src/host/minilua
+/Source/Urho3D/Precompiled.cpp
+/Source/Urho3D/Urho3D.h
+/Source/Urho3D/Urho3D.pc
+/Source/Urho3D/Urho3D.pc.msvc
+/Source/Urho3D/Urho3DAll.h
+/Source/Urho3D/librevision.h
+
+# Compiled shaders
+*.vs?
+*.ps?
+
+# Compiled AngelScript
+*.asc
+
+# Compiled Lua script
+*.luc
+
+# Generated documentation
+/Docs/html/
+/Docs/qch/
+
+# Saved sample scenes
+/bin/Data/Scenes/Isometric2D.xml
+/bin/Data/Scenes/Platformer2D.xml
+
+# Eclipse project settings
+/.*project
+/.settings
+
+# KDevelop project settings
+/*.kdev?
+
+# Qt Creator project settings
+/CMakeLists.txt.user
+
+# JetBrains IDE project settings
+/.idea/
+/cmake-build-*/
+
+# Code::Blocks project settings
+/*.cbp
+
+# Codelite project settings
+/*.project
+/*.workspace
+
+# Android project settings
+/Android/local.properties
+
+# Android output directories
+/Android/Urho3D/
+/Android/ThirdParty/
+/Android/libs/
+
+# CMake generated build files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+/Source/**/*.cmake
+!/Source/ThirdParty/SDL/cmake/*.cmake
+!/Source/ThirdParty/SDL/include/*cmake
+!/Source/ThirdParty/Assimp/cmake-modules/*cmake
+/Docs/**/*.cmake
+
+# Precompiled header files
+*.gch/
+*.pch/
+*.pch.*
+
+# Custom rake tasks
+/.rake/
+.rake_t_cache
+
+# Misc.
+configure*
+*~
+*.swp
+.DS_Store
+*.log
+*.bak
+Thumbs.db
+.directory
+
+.build*
+build_*
+
+android_app_build/build/
+android_app_build/app/build/
+libGame.so
+local.properties
+
+libUrho3D.so
+libc++_shared.so
+android_app_build/

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="5dp">
+
+    <ImageView
+        android:id="@+id/rl_iv_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/location"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"/>
+
+    <TextView
+        android:id="@+id/rl_tv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="[位置]"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:layout_marginLeft="10dp"
+        android:layout_toRightOf="@+id/rl_iv_location"
+        android:gravity="left|center_horizontal"/>
+
+    <TextView
+        android:id="@+id/rl_tv_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="四川省成都市高新区孵化园"
+        android:textSize="12sp"
+        android:textColor="#66000000"
+        android:layout_alignLeft="@+id/rl_tv_name"
+        android:layout_below="@+id/rl_tv_name"
+        android:gravity="left|center_horizontal"/>
+
+    <TextView
+        android:id="@+id/rl_tv_subit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="确认选点"
+        android:gravity="center"
+        android:textSize="14sp"
+        android:padding="3dp"
+        android:textColor="@color/white"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/selectedlocation_bg"/>
+
+
+</RelativeLayout>

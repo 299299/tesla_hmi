@@ -1,0 +1,7 @@
+<material>
+    <technique name="Techniques/NoTextureUnlitAlpha.xml" />
+    <parameter name="MatDiffColor" value="0 0.04 0.93 0.5" />
+    <parameter name="MatSpecColor" value="1 1 1 1" />
+    <parameter name="MatEmissiveColor" value="0.1 0.1 0.1 1" />
+    <cull value="none" />
+</material>

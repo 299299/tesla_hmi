@@ -1,0 +1,480 @@
+1.becarefull the assert function here, in Urho3D assert will not take any effect in release mode, so in impl_zmq.cc,
+assert(zmq_msg_init(&msg) == 0); should be adapted.
+
+
+# code snipets
+else if (eventd.which == cereal_Event_driverState)
+{
+    cereal_DriverState data;
+    cereal_read_DriverState(&data, eventd.driverState);
+    int face_len = capn_len(data.facePosition);
+    //URHO3D_LOGINFOF("face_len=%d faceProb=%f  leftEyeProb=%f rightEyeProb=%f leftBlinkProb=%f rightBlinkProb=%f ",
+    //    face_len, data.faceProb, data.leftEyeProb, data.rightEyeProb, data.leftBlinkProb, data.rightBlinkProb);
+    face_detection_.face_num = face_len;
+    face_detection_.face_prob = data.faceProb;
+    face_detection_.left_eye_prob = data.leftEyeProb;
+    face_detection_.right_eye_prob = data.rightEyeProb;
+    face_detection_.left_blink_prob = data.leftBlinkProb;
+    face_detection_.right_blink_prob = data.rightBlinkProb;
+    face_detection_.face_detected = (face_len > 0 ) && (data.faceProb > FACE_THRESHOLD);
+    auto left_blink = (face_detection_.left_eye_prob > EYE_THRESHOLD) ? face_detection_.left_blink_prob : 0.0;
+    auto right_blink =  (face_detection_.right_eye_prob > EYE_THRESHOLD) ? face_detection_.right_blink_prob : 0.0;
+    face_detection_.eye_blink = (left_blink + right_blink) * 0.5 > BLINK_THRESHOLD;
+}
+
+// snprintf(buf, sizeof(buf), "\n face-num=%d, face_prob=%.2f, \n left_eye_prob=%.2f, right_eye_prob=%.2f, \n left_blink_prob=%.2f right_blink_prob=%.2f",
+//         face_detection_.face_num,
+//         face_detection_.face_prob,
+//         face_detection_.left_eye_prob,
+//         face_detection_.right_eye_prob,
+//         face_detection_.left_blink_prob,
+//         face_detection_.right_blink_prob);
+// text += String(buf);
+
+// snprintf(buf, sizeof(buf), "\n gps speed=%f longitude=%f latitude=%f",
+//         speed_,
+//         longitude_,
+//         latitude_);
+// text += String(buf);
+
+// if (input->GetNumTouches() > 0)
+// {
+//     URHO3D_LOGERRORF("num-touches = %d", input->GetNumTouches());
+//     TouchState* state = input->GetTouch(0);
+//     auto x = state->position_.x_;
+//     auto y = state->position_.y_;
+//     URHO3D_LOGERRORF("x=%d y=%d \n", x, y);
+// }
+
+static void get_current_time(int& hour, int& min, int& sec)
+{
+    time_t rawtime;
+    struct tm * timeinfo;
+    time (&rawtime);
+    timeinfo = localtime (&rawtime);
+    hour = timeinfo->tm_hour;
+    min = timeinfo->tm_min;
+    sec = timeinfo->tm_sec;
+}
+
+else if (eventd.which == cereal_Event_carEvents)
+{
+    cereal_CarEvent_list events = eventd.carEvents;
+    int len = capn_len(events);
+    URHO3D_LOGINFOF("get car events len=%d!!", len);
+    for (int i = 0; i < len; i++)
+    {
+        struct cereal_CarEvent event;
+        cereal_get_CarEvent(&event, events, i);
+        URHO3D_LOGINFOF("car event name=%d  ", event.name);
+
+        if (event.name == cereal_CarEvent_EventName_preDriverUnresponsive)
+        {
+            URHO3D_LOGINFO("preDriverUnresponsive !!");
+        }
+        else if (event.name == cereal_CarEvent_EventName_promptDriverUnresponsive)
+        {
+            URHO3D_LOGINFO("promptDriverUnresponsive !!");
+        }
+        else if (event.name == cereal_CarEvent_EventName_driverUnresponsive)
+        {
+            URHO3D_LOGINFO("driverUnresponsive !!");
+        }
+    }
+}
+
+else if (eventd.which == cereal_Event_liveParameters)
+{
+    cereal_LiveParametersData data;
+    cereal_read_LiveParametersData(&data, eventd.liveParameters);
+    URHO3D_LOGINFOF("live parameters valid=%d  steerRatio=%f sensorValid=%d posenetSpeed=%f posenetValid=%d ",
+                    data.valid,
+                    data.steerRatio,
+                    data.sensorValid,
+                    data.posenetSpeed,
+                    data.posenetValid);
+}
+
+
+else if (eventd.which == cereal_Event_thermal)
+{
+    // struct cereal_ThermalData datad;
+    // cereal_read_ThermalData(&datad, eventd.thermal);
+    // battery_percent_ = datad.batteryPercent;
+
+    // int max_cpu_temp = std::max(std::max((int)datad.cpu0, (int)datad.cpu1), std::max((int)datad.cpu2,
+    // (int)datad.cpu3));
+    // max_comp_temp_ = std::max(std::max((int)max_cpu_temp, (int)datad.mem), (int)datad.gpu) / 10;
+    // battery_temp_ = datad.bat / 1000;
+}
+
+
+else if (eventd.which == cereal_Event_controlsState)
+{
+    URHO3D_LOGINFO("controls state");
+}
+
+
+struct FaceDetection
+{
+    int face_num = 0;
+    bool face_detected = false;
+    bool eye_blink = false;
+    float face_prob = 0.0F;
+    float left_eye_prob = 0.0F;
+    float right_eye_prob = 0.0F;
+    float left_blink_prob = 0.0F;
+    float right_blink_prob = 0.0F;
+};
+
+
+else if (eventd.which == cereal_Event_gpsLocation)
+{
+    struct cereal_GpsLocationData data;
+    cereal_read_GpsLocationData(&data, eventd.gpsLocation);
+
+    // URHO3D_LOGINFOF("speed=%f, speedAccuracy=%f ", data.speed, data.speedAccuracy);
+    // speed_ = data.speed * 3.6F;
+    longitude_ = data.longitude;
+    latitude_ = data.latitude;
+}
+
+
+left_lane_node_->SetEnabled(op_custom_.left_lane);
+        right_lane_node_->SetEnabled(op_custom_.left_lane);
+
+        // if (op_custom_.left_lane)
+        // {
+        //     left_lane_node_->SetPosition(Vector3(-model_lane_width_, 0, 0));
+        //     visualize_lane_geometry(
+        //         model_.left_lane, path_vis_data_[0].points, left_lane_geometry_, left_lane_mat_, LANE_LINE_WIDTH);
+        // }
+        // if (op_custom_.right_lane)
+        // {
+        //     right_lane_node_->SetPosition(Vector3(model_lane_width_, 0, 0));
+        //     visualize_lane_geometry(
+        //         model_.right_lane, path_vis_data_[1].points, right_lane_geometry_, right_lane_mat_, LANE_LINE_WIDTH);
+        // }
+
+struct OpCustomData
+{
+    bool left_lane = false;
+    bool right_lane = false;
+};
+
+
+    else if (eventd.which == cereal_Event_dMonitoringState)
+    {
+        struct cereal_DMonitoringState data;
+        cereal_read_DMonitoringState(&data, eventd.dMonitoringState);
+        driver_status_.faceDetected = data.faceDetected != 0;
+        driver_status_.isDistracted = data.isDistracted;
+        driver_status_.awarenessStatus = data.awarenessStatus;
+        driver_status_.posePitchOffset = data.posePitchOffset;
+        driver_status_.posePitchValidCount = data.posePitchValidCount;
+        driver_status_.poseYawOffset = data.poseYawOffset;
+        driver_status_.poseYawValidCount = data.poseYawValidCount;
+        driver_status_.awarenessPassive = data.awarenessPassive;
+        driver_status_.awarenessActive = data.awarenessActive;
+    }
+
+
+void Game::HandleOPModel(const cereal_Event& eventd)
+{
+    struct cereal_ModelData modeld;
+    cereal_read_ModelData(&modeld, eventd.model);
+
+    ModelData d = {0};
+
+    d.path = read_path(modeld.path);
+    d.left_lane = read_path(modeld.leftLane);
+    d.right_lane = read_path(modeld.rightLane);
+
+    struct cereal_ModelData_LeadData leadd;
+    cereal_read_ModelData_LeadData(&leadd, modeld.lead);
+    d.lead.dist = leadd.dist;
+    d.lead.prob = leadd.prob;
+    d.lead.std = leadd.std;
+    d.lead.rel_v = leadd.relVel;
+    d.lead.rel_a = leadd.relA;
+    d.lead.rel_y = leadd.relY;
+
+    cereal_read_ModelData_LeadData(&leadd, modeld.leadFuture);
+    d.lead_future.dist = leadd.dist;
+    d.lead_future.prob = leadd.prob;
+    d.lead_future.std = leadd.std;
+    d.lead_future.rel_v = leadd.relVel;
+    d.lead_future.rel_a = leadd.relA;
+    d.lead_future.rel_y = leadd.relY;
+
+    struct cereal_ModelData_MetaData metad;
+    cereal_read_ModelData_MetaData(&metad, modeld.meta);
+    d.meta[0] = metad.engagedProb;
+    d.meta[1] = metad.brakeDisengageProb;
+    d.meta[2] = metad.gasDisengageProb;
+    d.meta[3] = metad.steerOverrideProb;
+
+    capn_list32 dp = metad.desirePrediction;
+    capn_resolve(&dp.p);
+    for (int i = 0; i < DESIRE_PRED_SIZE; i++)
+    {
+        d.meta[i + 4] = capn_to_f32(capn_get32(dp, i));
+    }
+
+    model_ = d;
+
+    if (model_frame_ > 10)
+    {
+        PODVector< Vector3 > points;
+
+        {
+            update_lane_line_data(model_.left_lane, START_X, LANE_LINE_DIST, points);
+            auto& a_points = path_vis_data_[0].points;
+            auto min_size = Min(points.Size(), a_points.Size());
+            for (int i = 0; i < min_size; ++i)
+            {
+                auto& x_a = a_points[i].x_;
+                auto x_b = points[i].x_;
+                x_a = Lerp(x_a, x_b, LANE_BLEND_SPEED);
+            }
+        }
+
+        {
+            update_lane_line_data(model_.right_lane, START_X, LANE_LINE_DIST, points);
+            auto& a_points = path_vis_data_[1].points;
+            auto min_size = Min(points.Size(), a_points.Size());
+            for (int i = 0; i < min_size; ++i)
+            {
+                auto& x_a = a_points[i].x_;
+                auto x_b = points[i].x_;
+                x_a = Lerp(x_a, x_b, LANE_BLEND_SPEED);
+            }
+        }
+
+        {
+            auto path_height = model_.path.validLen;
+            if (leadd.dist > 0.0F)
+            {
+                path_height = Min(leadd.dist, LANE_LINE_DIST);
+            }
+            update_lane_line_data(model_.path, 0, path_height, points);
+            auto& a_points = path_vis_data_[2].points;
+            auto min_size = Min(points.Size(), a_points.Size());
+            for (int i = 0; i < min_size; ++i)
+            {
+                auto& x_a = a_points[i].x_;
+                auto x_b = points[i].x_;
+                x_a = Lerp(x_a, x_b, LANE_BLEND_SPEED);
+            }
+        }
+    }
+    else
+    {
+        update_lane_line_data(model_.left_lane, START_X, LANE_LINE_DIST, path_vis_data_[0].points);
+        update_lane_line_data(model_.right_lane, START_X, LANE_LINE_DIST, path_vis_data_[1].points);
+
+        auto path_height = model_.path.validLen;
+        if (leadd.dist > 0.0F)
+        {
+            path_height = Min(leadd.dist, LANE_LINE_DIST);
+        }
+        update_lane_line_data(model_.path, 0, path_height, path_vis_data_[2].points);
+    }
+
+    model_lane_width_ = std::abs(path_vis_data_[0].points[0].x_ - path_vis_data_[1].points[0].x_);
+
+    model_changed_ = true;
+    ++model_frame_;
+}
+
+int last_alert_;
+float last_alert_time_;
+
+void Game::HandleOPControlState(const cereal_Event& eventd)
+{
+    struct cereal_ControlsState data;
+    cereal_read_ControlsState(&data, eventd.controlsState);
+    // control_enabled_ = data.active;
+
+    auto alert_sound = data.alertSound;
+    bool play_sound = true;
+
+    if (last_alert_ == alert_sound)
+    {
+        if (message_time_ - last_alert_time_ <= 3.0)
+            play_sound = false;
+    }
+
+    if (play_sound)
+    {
+        const char* alert_sounds[] = {
+            NULL,
+            "MY/engaged.wav",
+            "MY/disengaged.wav",
+            "MY/error.wav",
+            "MY/warning_1.wav",
+            "MY/warning_2.wav",
+            "MY/warning_repeat.wav",
+            "MY/error.wav",
+        };
+
+        auto capa = sizeof(alert_sounds) / sizeof(alert_sounds[0]);
+        if (alert_sound > 0 && alert_sound < capa)
+            PlaySound(alert_sounds[alert_sound]);
+
+        last_alert_time_ = time_->GetElapsedTime();
+        last_alert_ = alert_sound;
+    }
+}
+
+
+else if (eventd.which == cereal_Event_thumbnail)
+    {
+        struct cereal_Thumbnail thumbnail_data;
+        cereal_read_Thumbnail(&thumbnail_data, eventd.thumbnail);
+
+        auto* data = thumbnail_data.thumbnail.p.data;
+        auto len = thumbnail_data.thumbnail.p.len;
+        MemoryBuffer buffer(data, len);
+        bool ret = thumbnail_img_->Load(buffer);
+        if (ret)
+        {
+            thumbnail_tex_->SetData(thumbnail_img_);
+        }
+        else
+        {
+            URHO3D_LOGERROR("thumbnail image load failed !");
+        }
+    }
+
+else if (eventd.which == cereal_Event_gpsLocationExternal)
+    {
+        struct cereal_GpsLocationData data;
+        cereal_read_GpsLocationData(&data, eventd.gpsLocationExternal);
+        longitude_ = data.longitude;
+        latitude_ = data.latitude;
+
+        //         if (longitude_ > 0.0001 && latitude_ > 0.0001)
+        //         {
+        // #ifdef __ANDROID__
+        //             Android_JNI_SendMessage2(
+        //                 FROM_NATIVE_GPS, data.longitude, data.latitude, data.speed, data.accuracy, data.bearing);
+        // #endif
+        //         }
+    }
+
+
+设施类型。
+0：未知道路设施
+4：测速摄像头、测速雷达
+5：违章摄像头
+10:请谨慎驾驶
+11:有连续拍照
+12：铁路道口
+13：注意落石（左侧）
+14：事故易发地段
+15：易滑
+16：村庄
+18：前方学校
+19：有人看管的铁路道口
+20：无人看管的铁路道口
+21：两侧变窄
+22：向左急弯路
+23：向右急弯路
+24：反向弯路
+25：连续弯路
+26：左侧合流标识牌
+27：右侧合流标识牌
+28：监控摄像头
+29：专用道摄像头
+31：禁止超车
+36：右侧变窄
+37：左侧变窄
+38：窄桥
+39：左右绕行
+40：左侧绕行
+41：右侧绕行
+42：注意落石（右侧）
+43：傍山险路（左侧）
+44：傍山险路（右侧）
+47：上陡坡
+48：下陡坡
+49：过水路面
+50：路面不平
+52：慢行
+53：注意危险
+58：隧道
+59：渡口
+92:闯红灯
+93:应急车道
+94:非机动车道
+100：不绑定电子眼高发地
+101:车道违章
+102:超速违章
+
+
+lead_car_text_ = uiRoot->CreateChild< Text >("lead_car");
+lead_car_text_->SetTextEffect(TE_STROKE);
+lead_car_text_->SetFont(font, config_.lead_car_text_size);
+lead_car_text_->SetColor(SUN_GLOW);
+lead_car_text_->SetHorizontalAlignment(HA_LEFT);
+lead_car_text_->SetVerticalAlignment(VA_TOP);
+ui_elements_.Push(lead_car_text_);
+
+if (lead_visible || lead2_visible)
+{
+    char lead_buf[64] = {0};
+    auto lead_dist = lead_visible ? model_.leads[0].dRel : 9999.0;
+    auto lead2_dist = lead2_visible ? model_.leads[1].dRel : 9999.0;
+    if (lead2_dist < lead_dist)
+    {
+        snprintf(lead_buf, sizeof(lead_buf), "cut-in %.1f m", lead2_dist - RADAR_TO_CAMERA);
+    }
+    else
+    {
+        snprintf(lead_buf, sizeof(lead_buf), "%.1f m", lead_dist - RADAR_TO_CAMERA);
+    }
+    lead_car_text_->SetText(lead_buf);
+}
+else
+{
+    lead_car_text_->SetText("");
+}
+
+height = lead_car_text_->GetRowHeight();
+lead_car_text_->SetPosition(20, view_rect.top_ + half_h - height / 2.0);
+
+
+int calibration_status_;
+int calibration_percent_;
+
+
+
+void Game::HandleOPCarlibration(const cereal_Event& eventd)
+{
+    struct cereal_LiveCalibrationData datad;
+    cereal_read_LiveCalibrationData(&datad, eventd.liveCalibration);
+
+    calibration_status_ = datad.calStatus;
+    calibration_percent_ = datad.calPerc;
+}
+
+
+
+void Game::HandleOPPathPlan(const cereal_Event& eventd)
+{
+    cereal_PathPlan data;
+    cereal_read_PathPlan(&data, eventd.pathPlan);
+    lc_state_ = data.laneChangeState;
+}
+
+void Game::HandleOPLaneSpeed(const cereal_Event& eventd)
+{
+    cereal_LaneSpeed data;
+    cereal_read_LaneSpeed(&data, eventd.laneSpeed);
+}
+
+else if (eventd.which == cereal_Event_laneSpeed)
+{
+    HandleOPLaneSpeed(eventd);
+}
