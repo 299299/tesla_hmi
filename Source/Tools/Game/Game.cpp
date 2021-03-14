@@ -266,10 +266,9 @@ Game::Game(Context* context)
       car_gear_(1),
       camera_blend_speed_(0.1F),
       camera_blend_acceleration_(0.1F),
-      lc_state_(0),
       status_text_time_out_(5.0F),
       debug_test_(false),
-      lc_navigation_(0)
+      navigation_exit_(false)
 {
     URHO3D_LOGINFOF("************************ Game::Game() tid=%u ************************ ", pthread_self());
 
@@ -481,9 +480,9 @@ void Game::Update(float timeStep)
     }
 
     ReceiveDataFromOP();
-    SyncUI(timeStep);
     UpdateInput(timeStep);
     UpdateNavigation(timeStep);
+    SyncUI(timeStep);
     SyncToOP();
 }
 
@@ -1653,10 +1652,10 @@ void Game::Draw2D(float dt)
         status_text_time_out_ = 5.0F;
     }
 
-    if (!nav_data_main_thread_.exit_name.Empty())
-    {
-        status_text_->SetText(nav_data_main_thread_.exit_name);
-    }
+    // if (!nav_data_main_thread_.exit_name.Empty())
+    // {
+    //     status_text_->SetText(nav_data_main_thread_.exit_name);
+    // }
 
     auto width = speed_text_->GetRowWidth(0);
     auto height = speed_text_->GetRowHeight();
@@ -1807,14 +1806,16 @@ void Game::Draw2D(float dt)
     gear_x += (gap + gear_w);
     gear_d_text_->SetPosition(gear_x, gear_y);
 
-    bool right_visible = (model_.lanes[3].prob >= LANE_CHANGE_LINE_PROB && lc_state_ == 0 && control_enabled_);
-    bool left_visible = (model_.lanes[0].prob >= LANE_CHANGE_LINE_PROB && lc_state_ == 0 && control_enabled_);
+    bool right_visible = false;
+    bool left_visible = false;
 
     if (debug_test_)
     {
         left_visible = true;
         right_visible = true;
     }
+    else
+        right_visible = navigation_exit_;
 
     left_lc_btn_->SetVisible(left_visible);
     right_lc_btn_->SetVisible(right_visible);
@@ -1902,6 +1903,16 @@ void Game::UpdateKeyInput(float dt)
         model_.lanes[0].prob = 1.0F;
         model_.lanes[3].prob = 1.0F;
         _b *= -1;
+    }
+    else if (input_->GetKeyPress(KEY_R))
+    {
+        static int _d = 500;
+        nav_data_java_thread_.exit_name = (_d > 0) ? "test exit" : "";
+        nav_data_java_thread_.dist_to_next_step = _d;
+        nav_data_java_thread_.remain_dist = 5000;
+        _d -= 100;
+        if (_d < 0)
+            _d = 500;
     }
 }
 
@@ -2156,8 +2167,6 @@ void Game::HandleOPControlState(const cereal_Event& eventd)
     String alertText2 = buf;
 
     status_text_->SetText(alertText1 + "\n" + alertText2);
-
-    lc_state_ = (alertText1.StartsWith("Changing Lane"));
     status_text_time_out_ = LC_ANIM_TIMER;
 }
 
@@ -2169,26 +2178,17 @@ void Game::TriggerLaneChange(int lc_dir)
 
 void Game::UpdateNavigation(float dt)
 {
-    lc_navigation_ = 0;
+    navigation_exit_ = false;
     const auto& nav_data = nav_data_main_thread_;
     auto icon = nav_data.navi_icon;
-    bool is_turn_right = (icon == NAVI_ICON_RIGHT) || (icon == NAVI_ICON_RIGHT_FRONT) || (icon == NAVI_ICON_RIGHT_BACK);
+    // bool is_turn_right = (icon == NAVI_ICON_RIGHT) || (icon == NAVI_ICON_RIGHT_FRONT) || (icon ==
+    // NAVI_ICON_RIGHT_BACK);
     bool has_exit = !nav_data.exit_name.Empty();
     auto dist = nav_data.dist_to_next_step;
-    if (has_exit && dist > 0 && dist < 100 && is_turn_right)
+    if (has_exit && dist > 0 && dist < 1000)
     {
-        // right lane line exist and clear
-        if (model_.lanes[3].prob >= LANE_CHANGE_LINE_PROB && control_enabled_)
-        {
-            status_text_time_out_ = LC_ANIM_TIMER;
-            status_text_->SetText(String("click right lane change button to off the ramp (distance:") + String(dist) +
-                                  " m)");
-            lc_navigation_ = -1;
-        }
-        else
-        {
-            status_text_time_out_ = LC_ANIM_TIMER;
-            status_text_->SetText("dist to off the ramp: " + String(dist) + " m");
-        }
+        // status_text_time_out_ = LC_ANIM_TIMER;
+        // status_text_->SetText(String(dist) + " m to off ramp");
+        navigation_exit_ = true;
     }
 }

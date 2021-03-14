@@ -282,9 +282,8 @@ class Game : public Sample
     Node* ego_node_;
     SharedPtr< Material > ego_mat_;
 
-    int lc_state_;
     float status_text_time_out_;
-    int lc_navigation_;
 
     bool debug_test_;
+    bool navigation_exit_;
 };
