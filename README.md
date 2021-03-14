@@ -14,3 +14,15 @@ hmi related native code is under ./Source/Tools/Game/
 amap navigation integration code is under ./Android/src/com/github/urho3d/
 
 * [./Android/src/com/github/urho3d/Urho3D.java](./Android/src/com/github/urho3d/Urho3D.java)
+
+notice about testing:
+
+make your C2/EON connect to your phone/pad hotspot, and set to a fixed ip, e.g. "192.168.43.138"
+
+make sure your pad is set to a fixed ip address, either "192.168.43.138" or "192.168.43.1"
+
+the ip of C2 try to connnect to  is list in :
+
+https://github.com/299299/openpilot/blob/stock_additions_new/selfdrive/golden/phone_control.py#L99
+
+
