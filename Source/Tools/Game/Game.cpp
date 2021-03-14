@@ -1268,8 +1268,7 @@ void Game::OnAndroidCallback(int msg, double data1, double data2, double data3, 
             break;
         case NAVI_ROUTE_NOTIFY:
             break;
-        case NAVI_INFO:
-        {
+        case NAVI_INFO: {
             URHO3D_LOGINFOF(
                 "NAVI_INFO dist_to_next_step=%d time=%d icon=%d exit=%s ", (int)data1, (int)data2, (int)data3, data4);
             nav_data_java_thread_.exit_name = data4;
@@ -1277,8 +1276,7 @@ void Game::OnAndroidCallback(int msg, double data1, double data2, double data3, 
             nav_data_java_thread_.dist_to_next_step = (int)data1;
             break;
         }
-        case NAVI_INFO2:
-        {
+        case NAVI_INFO2: {
             URHO3D_LOGINFOF("NAVI_INFO2 dist_remain=%d time=%d step=%d cur_road_name=%s ",
                             (int)data1,
                             (int)data2,
@@ -1336,8 +1334,7 @@ void Game::OnAndroidCallback(int msg, double data1, double data2, double data3, 
                     "NAVI_CAMERA_INFO speed_limit camera speed=%d dist=%f ", nav_data_java_thread_.speed_limit, data3);
             }
             break;
-        case NAVI_FACILITY:
-        {
+        case NAVI_FACILITY: {
             int speed_limit = (int)data3;
             if (speed_limit > 0)
             {
@@ -1413,8 +1410,8 @@ void Game::SyncUI(float timeStep)
 
 void Game::DrawDebug()
 {
-    Urho3D::String info_text = " camera-dist: " + String(camera_dist_) + " pitch=" + String(pitch_) + " cpu-core=" +
-                               String(num_cpu_cores_) + " \n";
+    Urho3D::String info_text = " camera-dist: " + String(camera_dist_) + " pitch=" + String(pitch_) +
+                               " cpu-core=" + String(num_cpu_cores_) + " \n";
     char buf[256] = {0};
     Urho3D::String text;
     if (op_status_ == 1)
@@ -1459,8 +1456,8 @@ void Game::DrawDebug()
     }
 
     info_text += text;
-    info_text += "\n speed_limit=" + String(nav_data_main_thread_.speed_limit) + " icon=" +
-                 String(nav_data_main_thread_.navi_icon) + " exit_name=" + nav_data_main_thread_.exit_name;
+    info_text += "\n speed_limit=" + String(nav_data_main_thread_.speed_limit) +
+                 " icon=" + String(nav_data_main_thread_.navi_icon) + " exit_name=" + nav_data_main_thread_.exit_name;
     info_text += "\n longitude=" + String(longitude_) + " latitude=" + String(latitude_);
     // info_text += "\n graphics w=" + String(vw) + " h=" + String(vh);
 
