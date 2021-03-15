@@ -25,4 +25,8 @@ the ip of C2 try to connnect to  is list in :
 
 https://github.com/299299/openpilot/blob/stock_additions_new/selfdrive/golden/phone_control.py#L99
 
+latest apk release:
+
+http://d.zqapps.com/qdy8
+
 
