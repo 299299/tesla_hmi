@@ -27,7 +27,7 @@
 #include "SDL_uikitvideo.h"
 #include "SDL_uikitevents.h"
 #include "SDL_uikitopengles.h"
-
+#define NS_FORMAT_ARGUMENT(A)
 #import <Foundation/Foundation.h>
 
 static BOOL UIKit_EventPumpEnabled = YES;

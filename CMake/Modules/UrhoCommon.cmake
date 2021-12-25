@@ -886,7 +886,7 @@ macro (define_dependency_libs TARGET)
                 list (APPEND LIBS dbghelp)
             endif ()
         elseif (APPLE)
-            if (ARM)
+            if (ARM_1) # hacked by golden
                 list (APPEND LIBS "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreAudio" "-framework CoreGraphics" "-framework CoreMotion" "-framework Foundation" "-framework GameController" "-framework OpenGLES" "-framework QuartzCore" "-framework UIKit")
             else ()
                 list (APPEND LIBS "-framework AudioToolbox" "-framework Carbon" "-framework Cocoa" "-framework CoreFoundation" "-framework SystemConfiguration" "-framework CoreAudio" "-framework CoreServices" "-framework CoreVideo" "-framework ForceFeedback" "-framework IOKit" "-framework OpenGL")

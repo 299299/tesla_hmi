@@ -30,10 +30,19 @@ namespace Urho3D
 
 class Vector3;
 
+#if defined(__APPLE__) && defined(__arm64__)
+#define M1_MAC
+#endif
+
 /// Graphics capability support level. Web platform (Emscripten) also uses OpenGL ES, but is considered a desktop platform capability-wise
 #if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
 #define MOBILE_GRAPHICS
 #else
+#define DESKTOP_GRAPHICS
+#endif
+
+#ifdef M1_MAC
+#undef MOBILE_GRAPHICS
 #define DESKTOP_GRAPHICS
 #endif
 

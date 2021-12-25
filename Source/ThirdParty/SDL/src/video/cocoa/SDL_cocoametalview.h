@@ -33,7 +33,7 @@
 #import "SDL_cocoawindow.h"
 
 #if SDL_VIDEO_VULKAN && SDL_VIDEO_DRIVER_COCOA
-
+#define NS_FORMAT_ARGUMENT(A)
 #include <Cocoa/Cocoa.h>
 #include <Metal/Metal.h>
 #include <QuartzCore/CAMetalLayer.h>

@@ -22,7 +22,7 @@
 
 #ifndef SDL_cocoawindow_h_
 #define SDL_cocoawindow_h_
-
+#define NS_FORMAT_ARGUMENT(A)
 #import <Cocoa/Cocoa.h>
 
 typedef struct SDL_WindowData SDL_WindowData;

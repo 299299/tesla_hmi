@@ -24,7 +24,7 @@
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* System dependent filesystem routines                                */
-
+#define NS_FORMAT_ARGUMENT(A)
 #include <Foundation/Foundation.h>
 #include <sys/stat.h>
 #include <sys/types.h>

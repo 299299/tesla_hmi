@@ -40,7 +40,11 @@
 #elif defined(TVOS)
 extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #elif !defined(__linux__) && !defined(__EMSCRIPTEN__)
-#include <LibCpuId/libcpuid.h>
+#if defined(TARGET_OS_MAC) && defined(__arm64__)
+#define M1_MAC
+#else
+#include <LibCpuId/src/libcpuid.h>
+#endif
 #endif
 
 #if defined(_WIN32)
@@ -161,7 +165,7 @@ static void GetCPUData(struct CpuCoreCount* data)
     }
 }
 
-#elif !defined(__EMSCRIPTEN__) && !defined(TVOS)
+#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) &&!defined(M1_MAC)
 static void GetCPUData(struct cpu_id_t* data)
 {
     if (cpu_identify(nullptr, data) < 0)
@@ -458,9 +462,13 @@ unsigned GetNumPhysicalCPUs()
     return 1; // Targeting a single-threaded Emscripten build.
 #endif
 #else
+#ifdef M1_MAC
+    return 8;
+#else
     struct cpu_id_t data;
     GetCPUData(&data);
     return (unsigned)data.num_cores;
+#endif
 #endif
 }
 
@@ -491,9 +499,13 @@ unsigned GetNumLogicalCPUs()
     return 1; // Targeting a single-threaded Emscripten build.
 #endif
 #else
+#ifdef M1_MAC
+    return 8;
+#else
     struct cpu_id_t data;
     GetCPUData(&data);
     return (unsigned)data.num_logical_cpus;
+#endif
 #endif
 }
 

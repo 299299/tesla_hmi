@@ -26,6 +26,7 @@
 #if SDL_VIDEO_OPENGL_CGL
 
 #include "SDL_atomic.h"
+#define NS_FORMAT_ARGUMENT(A)
 #import <Cocoa/Cocoa.h>
 
 struct SDL_GLDriverData

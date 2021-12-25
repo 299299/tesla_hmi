@@ -27,6 +27,7 @@
 
 #include <ApplicationServices/ApplicationServices.h>
 #include <IOKit/pwr_mgt/IOPMLib.h>
+#define NS_FORMAT_ARGUMENT(A)
 #include <Cocoa/Cocoa.h>
 
 #include "SDL_keycode.h"

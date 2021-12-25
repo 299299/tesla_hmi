@@ -29,6 +29,9 @@
 #define MACOSX_COREAUDIO 1
 #endif
 
+#define NS_FORMAT_ARGUMENT(A)
+// #undef NS_FORMAT_ARGUMENT
+
 #if MACOSX_COREAUDIO
 #include <CoreAudio/CoreAudio.h>
 #include <CoreServices/CoreServices.h>

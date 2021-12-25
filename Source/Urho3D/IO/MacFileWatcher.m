@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
+#define NS_FORMAT_ARGUMENT(A)
 #import <Foundation/Foundation.h>
 #import <CoreServices/CoreServices.h>
 

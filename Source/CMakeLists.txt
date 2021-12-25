@@ -20,6 +20,16 @@
 # THE SOFTWARE.
 #
 
+add_definitions(-w)
+#add_compile_definitions(NS_FORMAT_ARGUMENT=)
+#add_definitions("-DNS_FORMAT_ARGUMENT(A)=")
+
+set(GLEW_H /opt/homebrew/Cellar/glew/2.2.0_1/include/GL)
+include_directories(${GLEW_H})
+
+set(GLEW_LINK /opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib)
+link_libraries(${GLEW_LINK})
+
 # Check existence of various header files and their functions required by some of the third-party libraries and Urho3D library
 # Set the CMake variables in this scope but only add the compiler defines in the respective library's scope
 include (CheckIncludeFile)

@@ -18,9 +18,11 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
 #include "../../SDL_internal.h"
 
 #ifdef __APPLE__
+#define NS_FORMAT_ARGUMENT(A)
 #import <Foundation/Foundation.h>
 
 #include "SDL_rwopsbundlesupport.h"

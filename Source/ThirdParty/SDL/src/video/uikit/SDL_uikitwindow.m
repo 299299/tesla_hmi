@@ -39,7 +39,7 @@
 
 #import "SDL_uikitview.h"
 #import "SDL_uikitopenglview.h"
-
+#define NS_FORMAT_ARGUMENT(A)
 #include <Foundation/Foundation.h>
 
 @implementation SDL_WindowData

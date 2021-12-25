@@ -69,6 +69,6 @@ for a in $@; do
 done
 
 # Create project with the chosen CMake generator and toolchain
-cmake -E make_directory "$BUILD" && cmake -E chdir "$BUILD" cmake $OPTS $@ "$SOURCE" && post_cmake
+cmake -E make_directory "$BUILD" && cmake -E chdir "$BUILD" cmake $OPTS $@ "$SOURCE"
 
 # vi: set ts=4 sw=4 expandtab:
