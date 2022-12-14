@@ -373,6 +373,7 @@ void Game::ReceiveDataFromOP()
     auto cur_time = time_->GetElapsedTime();
     if (cur_time - message_time_ > 5.0 && op_status_ == 1)
     {
+        URHO3D_LOGERROR("message time out");
         op_status_ = 2;
     }
     // peek and consume all events in the zmq queue, then return.
@@ -994,9 +995,8 @@ void Game::OnAndroidCallback(int msg, double data1, double data2, double data3, 
 void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
 {
     op_status_ = 1;
+    message_time_ = time_->GetElapsedTime();
     const auto& json_root = json->GetRoot();
-    // op_custom_.left_lane = json_root.Get("left_lane").GetBool();
-    // op_custom_.right_lane = json_root.Get("right_lane").GetBool();
     car_status_.speed_kmh = json_root.Get("speed").GetFloat();
     car_status_.gear = json_root.Get("gear").GetInt();
     car_status_.steering_wheel = json_root.Get("steering_wheel").GetFloat();
