@@ -613,7 +613,7 @@ void Game::CreateUI()
     status_text_->SetTextEffect(TE_SHADOW);
     status_text_->SetFont(font, config_.status_text_size);
     status_text_->SetColor(Color(26 / 255.0, 80 / 255.0, 139 / 255.0));
-    status_text_->SetText("OP CONNECTING");
+    status_text_->SetText("");
     ui_elements_.Push(status_text_);
 
     int icon_top = config_.top_gap + config_.icon_size / 2.0;
@@ -1032,11 +1032,11 @@ void Game::DrawDebug()
     }
     else if (op_status_ == 2)
     {
-        info_text += String(" OP message time out !!!");
+        info_text += String("message time out !!!");
     }
     else if (op_status_ == 0)
     {
-        info_text += String(" waiting for connection of OP");
+        info_text += String(" waiting for connection");
     }
     else if (op_status_ == -1)
     {
