@@ -997,12 +997,14 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
     op_status_ = 1;
     message_time_ = time_->GetElapsedTime();
     const auto& json_root = json->GetRoot();
-    car_status_.speed_kmh = json_root.Get("speed").GetFloat();
+    car_status_.speed_kmh = json_root.Get("speed").GetFloat() * 3.6F;
     car_status_.gear = json_root.Get("gear").GetInt();
     car_status_.steering_wheel = json_root.Get("steering_wheel").GetFloat();
     car_status_.pos_x = json_root.Get("x").GetFloat();
     car_status_.pos_y = json_root.Get("y").GetFloat();
-    car_status_.turn_signal = json_root.Get("turn_signal").GetFloat();
+    car_status_.turn_signal = json_root.Get("turn_signal").GetInt();
+    car_status_.brake_lights = json_root.Get("brake_lights").GetBool();
+    car_status_.ad_on = json_root.Get("ad_on").GetBool();
 }
 
 void Game::SyncUI(float timeStep)
@@ -1282,6 +1284,10 @@ void Game::UpdateKeyInput(float dt)
     {
         car_status_.turn_signal++;
         car_status_.turn_signal = car_status_.turn_signal % 4;
+    }
+    else if (input_->GetKeyPress(KEY_9))
+    {
+        car_status_.brake_lights = !car_status_.brake_lights;
     }
     else if (input_->GetKeyPress(KEY_0))
     {
