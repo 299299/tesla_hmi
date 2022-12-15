@@ -21,14 +21,23 @@ class PubSocket;
 class SubSocket;
 };  // namespace OP
 
-struct LineVisData
+struct Slot
 {
     PODVector< Vector3 > points;
-    CustomGeometry* geometry;
-    Node* node;
-    SharedPtr< Material > material;
-    float width;
-    bool solid = true;
+};
+
+struct VehicleStatus
+{
+    bool ad_on = false;
+    float pos_x = 0.0F;
+    float pos_y = 0.0F;
+    float steering_wheel = 0.0F;
+    float speed_kmh = 0.0F;
+    int gear = 0;
+    int turn_signal = 0;
+    bool brake_lights = false;
+
+    std::vector< Slot > slots;
 };
 
 struct ConfigData
@@ -81,21 +90,6 @@ struct ConfigData
     float gap_lane_offset = 0.1F;
 };
 
-struct NavData
-{
-    String exit_name;
-    String cur_road_name;
-    int speed_limit = 0;
-    int navi_type = -1;
-    int navi_icon = 0;
-    int map_type = -1;
-    int dist_to_next_step = -1;
-    int remain_dist = -1;
-    bool high_way = false;
-};
-
-#define MAX_LIVE_TRACKS 16
-
 class Game : public Sample
 {
     URHO3D_OBJECT(Game, Sample);
@@ -139,12 +133,6 @@ class Game : public Sample
     void Draw3D(float dt);
     void Draw2D(float dt);
 
-    void HandleOPModel(const cereal_Event& eventd);
-    void HandleOPCarState(const cereal_Event& eventd);
-    void HandleOPLiveTracks(cereal_Event& eventd);
-    void HandleOPRadarState(const cereal_Event& eventd);
-    void HandleOPControlState(const cereal_Event& eventd);
-
     void HandleTouchEnd(StringHash eventType, VariantMap& eventData);
     void HandleControlClicked(StringHash eventType, VariantMap& eventData);
     void HandleMouseButtonUp(StringHash eventType, VariantMap& eventData);
@@ -159,21 +147,8 @@ class Game : public Sample
     OP::PubSocket* sync_pub_;
 
     float last_sync_time_;
-    ModelData model_;
 
     int op_status_;
-
-    // Lane line visualization & points
-    LineVisData lane_vis_[4];
-
-    // path visualization & points
-    LineVisData path_vis_;
-
-    // road edge visualization & points
-    LineVisData road_edge_vis_[2];
-
-    Node* lead_car_;
-    Node* lead_car2_;
 
     Light* front_light_;
     Light* tail_light_;
@@ -185,7 +160,6 @@ class Game : public Sample
     Text* status_text_;
     Text* speed_text_;
     Text* speed_hint_text_;
-    Text* set_speed_text_;
 
     Text* gear_p_text_;
     Text* gear_r_text_;
@@ -193,7 +167,6 @@ class Game : public Sample
     Text* gear_d_text_;
 
     std::vector< OP::SubSocket* > socks_;
-    bool model_changed_;
 
     float message_time_;
 
@@ -201,25 +174,14 @@ class Game : public Sample
 
     float speed_;
     float speed_ms_;
-    double longitude_;
-    double latitude_;
     float touch_down_time_;
     int debug_touch_flag_;
     bool android_;
     unsigned num_cpu_cores_;
-    bool brake_lights_;
 
     Sprite* left_turn_signal_sprite_;
     Sprite* right_turn_signal_sprite_;
     float turn_signal_time_;
-    int turn_signal_;
-
-    Mutex lock_;
-    NavData nav_data_java_thread_;
-    NavData nav_data_main_thread_;
-
-    Sprite* speed_limit_sprite_;
-    int last_speed_limit_;
 
     float camera_dist_;
     float target_pitch_;
@@ -236,15 +198,8 @@ class Game : public Sample
 
     PODVector< char > json_buffer_;
 
-    bool control_enabled_;
-
     Sprite* ad_on_sprite_;
     Sprite* ad_off_sprite_;
-
-    PODVector< Vector3 > live_tracks_;
-    Node* track_nodes_[MAX_LIVE_TRACKS];
-
-    bool show_live_tracks_;
 
     Input* input_;
     Time* time_;
@@ -254,11 +209,8 @@ class Game : public Sample
     ResourceCache* cache_;
 
     int op_debug_mode_;
-    float set_speed_;
 
-    int model_frame_;
-    float steering_wheel_;
-    int car_gear_;
+    VehicleStatus car_status_;
 
     PODVector< UIElement* > ui_elements_;
 
@@ -268,22 +220,13 @@ class Game : public Sample
     Text* debug_log_btn_;
     PODVector< UIElement* > debug_ui_elements_;
 
-    String op_cmd_line_;
-
-    Sprite* left_lc_btn_;
-    Sprite* right_lc_btn_;
-
-    int lc_dir_;
-    int lc_send_frames_;
-
-    float road_edge_left_;
-    float road_edge_right_;
-
     Node* ego_node_;
     SharedPtr< Material > ego_mat_;
 
     float status_text_time_out_;
 
     bool debug_test_;
-    bool navigation_exit_;
+
+    std::vector< Node* > slot_nodes_;
+    Material* line_mat_;
 };
