@@ -7,7 +7,7 @@
 
     <!-- Android 4.1 (Jelly Bean) -->
     <uses-sdk
-        android:minSdkVersion="18"
+        android:minSdkVersion="16"
         android:targetSdkVersion="27"/>
 
     <!-- OpenGL ES 2.0 -->
@@ -25,79 +25,18 @@
     <!-- Allow writing to external storage -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
     <application
         android:label="@string/app_name"
         android:icon="@drawable/icon"
-        android:theme="@style/AppTheme"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:hardwareAccelerated="true"
         android:allowBackup="false">
-        <!--<activity-->
-            <!--android:name=".SampleLauncher"-->
-            <!--android:configChanges="keyboardHidden|orientation|screenSize"-->
-            <!--android:noHistory="true"-->
-            <!--android:screenOrientation="portrait">-->
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.MAIN"/>-->
-                <!--<category android:name="android.intent.category.LAUNCHER"/>-->
-            <!--</intent-filter>-->
-        <!--</activity>-->
-        <!--<activity-->
-        <!--android:name=".ScriptPicker"-->
-        <!--android:configChanges="keyboardHidden|orientation|screenSize"-->
-        <!--android:noHistory="true"-->
-        <!--android:screenOrientation="portrait"/>-->
-
         <activity
             android:name=".Urho3D"
+            android:label="@string/app_name"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            >
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.MAIN" />-->
-                <!--<category android:name="android.intent.category.LAUNCHER" />-->
-            <!--</intent-filter>-->
+            android:screenOrientation="portrait">
         </activity>
-
-        <activity
-            android:name=".Urho3D_Map"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            >
-        </activity>
-
-        <activity
-            android:name=".Urho3D_MapNew"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            >
-        </activity>
-
-        <activity
-            android:name=".Urho3D_Test"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            >
-        </activity>
-
-        <service android:name="com.amap.api.location.APSService" />
-
-        <activity android:name=".NavigationActivity" >
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.MAIN" />-->
-                <!--<category android:name="android.intent.category.LAUNCHER" />-->
-            <!--</intent-filter>-->
-        </activity>
-
-        <activity android:name=".PiclocationActivity" />
-
-        <activity android:name=".GPSNaviActivity" />
-
-        <activity android:name=".PoiSearchActivity" />
 
         <activity android:name=".EntryUI" >
             <intent-filter>
@@ -105,12 +44,6 @@
             <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!--build from linux-->
-        <meta-data android:name="com.amap.api.v2.apikey" android:value="45f130ec1cc858672ad16f80e45e39c1"/>
-
-        <!--build from osx-->
-        <!--<meta-data android:name="com.amap.api.v2.apikey" android:value="7f716e79392de6430554f05853d4bac8"/>-->
 
 
     </application>

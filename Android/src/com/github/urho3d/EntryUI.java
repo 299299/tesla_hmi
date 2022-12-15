@@ -73,9 +73,6 @@ public class EntryUI extends Activity implements View.OnClickListener{
         EditText text = findViewById(R.id.ip_text);
         String ip_text = text.getText().toString();
         Urho3D.IP_ADDRESS = ip_text;
-        Urho3D_Map.IP_ADDRESS = ip_text;
-        Urho3D_Test.IP_ADDRESS = ip_text;
-        Urho3D_MapNew.IP_ADDRESS = ip_text;
 
         SharedPreferences pref = getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
@@ -83,39 +80,9 @@ public class EntryUI extends Activity implements View.OnClickListener{
         editor.commit();
 
         switch (v.getId()) {
-            case R.id.map_button:
-                {
-                    Urho3D.run_type = Urho3D.RUN_MAP;
-                    Intent intent = new Intent(this, Urho3D_MapNew.class);
-                    startActivity(intent);
-                    break;
-                }
-//            case R.id.map_button:
-//                {
-//                    Urho3D.run_type = Urho3D.RUN_MAP;
-//                    // Intent intent = new Intent(this, Urho3D.class);
-//                    Intent intent = new Intent(this, Urho3D_Map.class);
-//                    startActivity(intent);
-//                    break;
-//                }
-
-            case R.id.nav_button:
-                {
-                    Urho3D.run_type = Urho3D.RUN_NAVI;
-                    Intent intent = new Intent(this, NavigationActivity.class);
-                    startActivity(intent);
-                    break;
-                }
-            case R.id.sim_button:
-                {
-                    Urho3D.run_type = Urho3D.RUN_SIM;
-                    Intent intent = new Intent(this, NavigationActivity.class);
-                    startActivity(intent);
-                    break;
-                }
             case R.id.test_button:
                 {
-                    Intent intent = new Intent(this, Urho3D_Test.class);
+                    Intent intent = new Intent(this, Urho3D.class);
                     startActivity(intent);
                     break;
                 }

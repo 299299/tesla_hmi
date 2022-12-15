@@ -26,27 +26,6 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="Navigation"
-        android:id="@+id/nav_button"
-        android:layout_weight="2"/>
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Map"
-        android:id="@+id/map_button"
-        android:layout_weight="2"/>
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Simulation"
-        android:id="@+id/sim_button"
-        android:layout_weight="2"/>
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
         android:text="Test"
         android:id="@+id/test_button"
         android:layout_weight="2"/>
