@@ -56,9 +56,6 @@ public class EntryUI extends Activity implements View.OnClickListener{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_entry);
-        findViewById(R.id.map_button).setOnClickListener(this);
-        findViewById(R.id.nav_button).setOnClickListener(this);
-        findViewById(R.id.sim_button).setOnClickListener(this);
         findViewById(R.id.test_button).setOnClickListener(this);
 
         SharedPreferences pref = getPreferences(Context.MODE_PRIVATE);
