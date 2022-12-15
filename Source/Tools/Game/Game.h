@@ -21,6 +21,11 @@ class PubSocket;
 class SubSocket;
 };  // namespace OP
 
+struct Slot
+{
+    PODVector< Vector3 > points;
+};
+
 struct VehicleStatus
 {
     bool ad_on = false;
@@ -31,6 +36,8 @@ struct VehicleStatus
     int gear = 0;
     int turn_signal = 0;
     bool brake_lights = false;
+
+    std::vector< Slot > slots;
 };
 
 struct ConfigData
@@ -219,4 +226,7 @@ class Game : public Sample
     float status_text_time_out_;
 
     bool debug_test_;
+
+    std::vector< Node* > slot_nodes_;
+    Material* line_mat_;
 };

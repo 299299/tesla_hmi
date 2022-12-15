@@ -63,66 +63,6 @@ extern int Android_JNI_SendMessage2(int cmd, double data1, double data2, double 
 }
 #endif
 
-static void visualize_lane_geometry(const PODVector< Vector3 >& pvd,
-                                    CustomGeometry* lane_geometry,
-                                    Material* mat,
-                                    float width,
-                                    bool solid,
-                                    float max_distance,
-                                    float x_offset = 0.0F)
-{
-    lane_geometry->Clear();
-    lane_geometry->SetNumGeometries(1);
-    lane_geometry->SetDynamic(true);
-
-    Vector3 offset(x_offset, 0, 0);
-
-    if (solid)
-    {
-        lane_geometry->BeginGeometry(0, TRIANGLE_STRIP);
-        for (const auto& pos : pvd)
-        {
-            if (pos.z_ > max_distance)
-                break;
-            lane_geometry->DefineVertex(pos + Vector3(width, 0, 0) + offset);
-            lane_geometry->DefineVertex(pos + Vector3(-width, 0, 0) + offset);
-        }
-    }
-    else
-    {
-        lane_geometry->BeginGeometry(0, TRIANGLE_LIST);
-        const int N = 10;
-        int cut_num = N;
-
-        for (int i = 0; i < pvd.Size() - 1; ++i)
-        {
-            int k = i / N;
-            if (k % 2 != 0)
-                continue;
-
-            auto pos0 = pvd[i];
-            auto pos1 = pvd[i + 1];
-            auto p0 = pos0 + Vector3(width, 0, 0);
-            auto p1 = pos0 + Vector3(-width, 0, 0);
-            auto p2 = pos1 + Vector3(width, 0, 0);
-            auto p3 = pos1 + Vector3(-width, 0, 0);
-
-            if (p0.z_ > max_distance)
-                break;
-
-            lane_geometry->DefineVertex(p0 + offset);
-            lane_geometry->DefineVertex(p1 + offset);
-            lane_geometry->DefineVertex(p3 + offset);
-            lane_geometry->DefineVertex(p3 + offset);
-            lane_geometry->DefineVertex(p2 + offset);
-            lane_geometry->DefineVertex(p0 + offset);
-        }
-    }
-
-    lane_geometry->SetMaterial(mat);
-    lane_geometry->Commit();
-}
-
 static void set_scale_by_car_size(Drawable* drawable)
 {
     auto* node = drawable->GetNode();
@@ -492,15 +432,7 @@ void Game::CreateScene()
         tail_light_ = light;
     }
 
-    auto* base_mat = cache_->GetResource< Material >("MY/Lane.xml");
-    Vector3 vis_position(0, 0, CAR_LENGTH - RADAR_TO_CAMERA);
-
-    // path_vis_.node = scene_->CreateChild("Path");
-    // path_vis_.node->SetPosition(vis_position);
-    // path_vis_.geometry = path_vis_.node->CreateComponent< CustomGeometry >();
-    // path_vis_.material = base_mat->Clone();
-    // path_vis_.width = config_.path_line_width;
-
+    line_mat_ = cache_->GetResource< Material >("MY/Lane.xml");
     UpdateDayLight();
 }
 
@@ -992,21 +924,6 @@ void Game::OnAndroidCallback(int msg, double data1, double data2, double data3, 
     }
 }
 
-void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
-{
-    op_status_ = 1;
-    message_time_ = time_->GetElapsedTime();
-    const auto& json_root = json->GetRoot();
-    car_status_.speed_kmh = json_root.Get("speed").GetFloat() * 3.6F;
-    car_status_.gear = json_root.Get("gear").GetInt();
-    car_status_.steering_wheel = json_root.Get("steering_wheel").GetFloat();
-    car_status_.pos_x = json_root.Get("x").GetFloat();
-    car_status_.pos_y = json_root.Get("y").GetFloat();
-    car_status_.turn_signal = json_root.Get("turn_signal").GetInt();
-    car_status_.brake_lights = json_root.Get("brake_lights").GetBool();
-    car_status_.ad_on = json_root.Get("ad_on").GetBool();
-}
-
 void Game::SyncUI(float timeStep)
 {
     UpdateViewport();
@@ -1064,11 +981,14 @@ void Game::DrawDebug()
         {
             ui_->DebugDraw(ele);
         }
-        // for (auto p : path_vis_.points)
-        // {
-        //     Sphere sp(p, 0.1F);
-        //     debug->AddSphere(sp, Color::YELLOW, false);
-        // }
+        for (auto slot : car_status_.slots)
+        {
+            for (auto p : slot.points)
+            {
+                Sphere sp(p, 0.1F);
+                debug->AddSphere(sp, Color::YELLOW, false);
+            }
+        }
     }
 
     // auto* cam = cameraNode_->GetComponent< Camera >();
@@ -1079,20 +999,41 @@ void Game::Draw3D(float dt)
 {
     tail_light_->SetEnabled(car_status_.brake_lights);
 
-    // if (model_changed_)
-    // {
-    //     float lead_d = lead1.dRel;
-    //     float path_length = (lead_d > 0.0F) ? lead_d - Min(lead_d * 0.35F, 10.0F) : MAX_DRAW_DISTANCE;
-    //     path_length = fmin(path_length, model_.max_distance);
+    for (auto n : slot_nodes_)
+    {
+        auto g = n->GetComponent< CustomGeometry >();
+        g->Clear();
+        g->Commit();
+    }
 
-    //     visualize_line(path_vis_, path_length);
-    //     for (int i = 0; i < 2; ++i)
-    //         visualize_line(road_edge_vis_[i], model_.max_distance);
-    //     for (int i = 0; i < 4; ++i)
-    //         visualize_line(lane_vis_[i], model_.max_distance);
+    if (car_status_.slots.size() > slot_nodes_.size())
+    {
+        auto node = scene_->CreateChild("slot");
+        node->CreateComponent< CustomGeometry >();
+        slot_nodes_.push_back(node);
+    }
 
-    //     model_changed_ = false;
-    // }
+    int num = car_status_.slots.size();
+    for (int i = 0; i < num; ++i)
+    {
+        const auto& slot = car_status_.slots[i];
+        auto* n = slot_nodes_[i];
+        auto* g = n->GetComponent< CustomGeometry >();
+
+        g->Clear();
+        g->SetNumGeometries(1);
+        g->SetDynamic(true);
+
+        g->BeginGeometry(0, TRIANGLE_STRIP);
+
+        g->DefineVertex(slot.points[0]);
+        g->DefineVertex(slot.points[1]);
+        g->DefineVertex(slot.points[3]);
+        g->DefineVertex(slot.points[2]);
+
+        g->SetMaterial(line_mat_);
+        g->Commit();
+    }
 }
 
 void Game::Draw2D(float dt)
@@ -1345,5 +1286,38 @@ void Game::OnUIClicked(UIElement* e)
     }
     else if (e == debug_clean_data_btn_)
     {
+    }
+}
+
+void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
+{
+    op_status_ = 1;
+    message_time_ = time_->GetElapsedTime();
+    const auto& json_root = json->GetRoot();
+    car_status_.speed_kmh = json_root.Get("speed").GetFloat() * 3.6F;
+    car_status_.gear = json_root.Get("gear").GetInt();
+    car_status_.steering_wheel = json_root.Get("steering_wheel").GetFloat();
+    car_status_.pos_x = json_root.Get("x").GetFloat();
+    car_status_.pos_y = json_root.Get("y").GetFloat();
+    car_status_.turn_signal = json_root.Get("turn_signal").GetInt();
+    car_status_.brake_lights = json_root.Get("brake_lights").GetBool();
+    car_status_.ad_on = json_root.Get("ad_on").GetBool();
+
+    car_status_.slots.clear();
+
+    const auto& json_slots = json_root.Get("slot_detection");
+    for (auto i = 0; i < json_slots.Size(); ++i)
+    {
+        const auto& json_slot = json_slots[i];
+        Slot slot;
+        int j = 0;
+        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
+        j += 2;
+        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
+        j += 2;
+        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
+        j += 2;
+        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
+        car_status_.slots.push_back(slot);
     }
 }
