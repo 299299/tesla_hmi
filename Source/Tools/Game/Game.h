@@ -58,7 +58,7 @@ struct ConfigData
     float camera_init_dist = 20.0F;
     float camera_init_pitch = 16.0F;
     float camera_reset_time = 5.0F;
-    float camera_init_pitch_tp = 90.0F;
+    float camera_init_pitch_tp = 75.0F;
 
     bool thumbnail = false;
     bool is_night = false;
@@ -210,8 +210,8 @@ class Game : public Sample
 
     bool debug_test_;
 
+    Node* parking_node_;
     std::vector< Node* > slot_nodes_;
     Material* line_mat_;
-
     Material* parking_mat_;
 };

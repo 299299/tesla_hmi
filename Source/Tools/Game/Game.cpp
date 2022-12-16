@@ -338,7 +338,7 @@ void Game::ReceiveDataFromOP()
         memset(p, 0, size + 1);
         memcpy(p, msg->getData(), size);
         String s(p);
-        URHO3D_LOGINFO(s);
+        // URHO3D_LOGINFO(s);
         SharedPtr< JSONFile > json(new JSONFile(context_));
         if (json->FromString(s))
             HandleCustomMessage(json);
@@ -433,6 +433,14 @@ void Game::CreateScene()
     }
 
     line_mat_ = cache_->GetResource< Material >("MY/Lane.xml");
+    parking_mat_ = cache_->GetResource< Material >("MY/Parking_icon.xml");
+
+    parking_node_ = scene_->CreateChild("ParkingSlot");
+    auto* billboard_set = parking_node_->CreateComponent<BillboardSet>();
+    billboard_set->SetMaterial(parking_mat_);
+    billboard_set->SetSorted(true);
+    billboard_set->SetFaceCameraMode(FC_LOOKAT_XYZ);
+
     UpdateDayLight();
 }
 
@@ -763,7 +771,7 @@ void Game::UpdateTPCamera(float dt)
         target_dist_ = -1.0F;
     }
 
-    if (touch_up_time_ > config_.camera_reset_time || car_status_.speed_kmh > 0.0)
+    if (touch_up_time_ > config_.camera_reset_time && car_status_.speed_kmh > 0.0)
     {
         target_pitch_ = config_.camera_init_pitch_tp;
         target_dist_ = config_.camera_init_dist;
@@ -1028,6 +1036,9 @@ void Game::Draw3D(float dt)
         slot_nodes_.push_back(node);
     }
 
+    auto* billboard_set = parking_node_->GetComponent<BillboardSet>();
+    billboard_set->SetNumBillboards(car_status_.slots.size());
+
     int num = car_status_.slots.size();
     for (int i = 0; i < num; ++i)
     {
@@ -1048,7 +1059,23 @@ void Game::Draw3D(float dt)
 
         g->SetMaterial(line_mat_);
         g->Commit();
+
+        Billboard* bb = billboard_set->GetBillboard(i);
+        Vector3 pos = Vector3::ZERO;
+        for (int j=0; j<4; ++j)
+            pos += slot.points[j];
+        pos /= 4.0F;
+
+        // printf ("pos=%s\n", pos.ToString().CString());
+
+        pos.y_ = 0.5F;
+        bb->position_ = pos;
+        bb->size_ = Vector2(0.25F, 0.25F);
+        bb->rotation_ = 0.0F;
+        bb->enabled_ = true;
     }
+
+    billboard_set->Commit();
 }
 
 void Game::Draw2D(float dt)
