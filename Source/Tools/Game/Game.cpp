@@ -151,7 +151,7 @@ void Game::InitOP()
 #ifdef __ANDROID__
         const char* ip_list[] = {"192.168.43.138", "192.168.137.138"};
 #else
-        const char* ip_list[] = {"192.168.1.24", "192.168.43.138", "127.0.0.1"};
+        const char* ip_list[] = {"192.168.1.17", "192.168.43.138", "127.0.0.1"};
 #endif
         for (int i = 0; i < sizeof(ip_list) / sizeof(ip_list[0]); ++i)
         {
@@ -1021,7 +1021,7 @@ void Game::Draw3D(float dt)
         g->Commit();
     }
 
-    if (car_status_.slots.size() > slot_nodes_.size())
+    while (car_status_.slots.size() > slot_nodes_.size())
     {
         auto node = scene_->CreateChild("slot");
         node->CreateComponent< CustomGeometry >();

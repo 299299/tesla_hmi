@@ -212,4 +212,6 @@ class Game : public Sample
 
     std::vector< Node* > slot_nodes_;
     Material* line_mat_;
+
+    Material* parking_mat_;
 };
