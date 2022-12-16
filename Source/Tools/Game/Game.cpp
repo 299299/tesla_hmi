@@ -217,7 +217,7 @@ void Game::Start()
     SetHDR(config_.hdr);
     CreateUI();
     InitOP();
-    // SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(Game, HandleUpdate));
+
     SubscribeToEvent(E_SCENEUPDATE, URHO3D_HANDLER(Game, HandleSceneUpdate));
     SubscribeToEvent(E_TOUCHEND, URHO3D_HANDLER(Game, HandleTouchEnd));
     SubscribeToEvent(E_UIMOUSECLICK, URHO3D_HANDLER(Game, HandleControlClicked));
@@ -305,7 +305,7 @@ void Game::Update(float timeStep)
     ReceiveDataFromOP();
     UpdateInput(timeStep);
     SyncUI(timeStep);
-    // SyncToOP();
+    SyncToOP();
 }
 
 void Game::ReceiveDataFromOP()
@@ -467,10 +467,25 @@ void Game::UpdateInput(float timeStep)
 
     UpdateDebugTouch(timeStep);
 
+    int target_cam_state = -1;
     if (car_status_.gear == GEAR_P || car_status_.gear == GEAR_N)
-        camera_state_ = kCameraFixed;
+        target_cam_state = kCameraFixed;
     else if (car_status_.gear == GEAR_R || car_status_.gear == GEAR_D)
-        camera_state_ = kCameraTP;
+        target_cam_state = kCameraTP;
+
+    if (target_cam_state != camera_state_)
+    {
+        camera_state_ = target_cam_state;
+
+        if (target_cam_state == kCameraFixed)
+        {
+
+        }
+        else if (target_cam_state == kCameraTP)
+        {
+            target_pitch_ = config_.camera_init_pitch_tp;
+        }
+    }
 
     if (camera_state_ == kCameraFPS)
         UpdateFPSCamera(timeStep);
@@ -523,7 +538,7 @@ void Game::CreateUI()
 
     debug_text_ = uiRoot->CreateChild< Text >("debug");
     debug_text_->SetText("");
-    debug_text_->SetFont(font, android_ ? config_.debug_text_size : 10);
+    debug_text_->SetFont(font, android_ ? config_.debug_text_size : 30);
     debug_text_->SetColor(Color::RED);
     debug_text_->SetHorizontalAlignment(HA_LEFT);
     debug_text_->SetVerticalAlignment(VA_TOP);
@@ -632,7 +647,7 @@ void Game::CreateUI()
                                    top + debug_setting_btn_->GetRowHeight() + gap);
 
     gear_p_text_ = uiRoot->CreateChild< Text >("P");
-    gear_p_text_->SetFont(font, config_.debug_ui_size);
+    gear_p_text_->SetFont(font, config_.gear_ui_size);
     gear_p_text_->SetText("P");
     gear_p_text_->SetColor(gear_color);
 
@@ -648,7 +663,7 @@ void Game::CreateUI()
 
     gear_x += (gap + gear_w);
     gear_r_text_ = uiRoot->CreateChild< Text >("R");
-    gear_r_text_->SetFont(font, config_.debug_ui_size);
+    gear_r_text_->SetFont(font, config_.gear_ui_size);
     gear_r_text_->SetText("R");
     gear_r_text_->SetColor(gear_color);
     gear_r_text_->SetPosition(gear_x, gear_y);
@@ -656,7 +671,7 @@ void Game::CreateUI()
 
     gear_x += (gap + gear_w);
     gear_n_text_ = uiRoot->CreateChild< Text >("N");
-    gear_n_text_->SetFont(font, config_.debug_ui_size);
+    gear_n_text_->SetFont(font, config_.gear_ui_size);
     gear_n_text_->SetText("N");
     gear_n_text_->SetPosition(gear_x, gear_y);
     gear_n_text_->SetColor(gear_color);
@@ -664,7 +679,7 @@ void Game::CreateUI()
 
     gear_x += (gap + gear_w);
     gear_d_text_ = uiRoot->CreateChild< Text >("D");
-    gear_d_text_->SetFont(font, config_.debug_ui_size);
+    gear_d_text_->SetFont(font, config_.gear_ui_size);
     gear_d_text_->SetText("D");
     gear_d_text_->SetPosition(gear_x, gear_y);
     gear_d_text_->SetColor(gear_color);
@@ -748,9 +763,9 @@ void Game::UpdateTPCamera(float dt)
         target_dist_ = -1.0F;
     }
 
-    if (touch_up_time_ > config_.camera_reset_time && car_status_.speed_kmh > 0.0)
+    if (touch_up_time_ > config_.camera_reset_time || car_status_.speed_kmh > 0.0)
     {
-        target_pitch_ = config_.camera_init_pitch;
+        target_pitch_ = config_.camera_init_pitch_tp;
         target_dist_ = config_.camera_init_dist;
         target_yaw_ = 0.0F;
         touch_up_time_ = 0.0F;
@@ -1235,6 +1250,7 @@ void Game::UpdateKeyInput(float dt)
         op_status_++;
         if (op_status_ > 2)
             op_status_ = -1;
+        car_status_.speed_kmh = 1;
         message_time_ = time_->GetElapsedTime();
     }
 }

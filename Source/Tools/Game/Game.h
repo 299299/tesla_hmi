@@ -49,12 +49,8 @@ struct ConfigData
 
     // int day_color[3] = { 255, 255, 255 };
     // int night_color[3] = { 30, 30, 30 };
-    int day_color[3] = {255, 255, 255};
+    int day_color[3] = {185, 185, 185};
     int night_color[3] = {60, 60, 60};
-
-    float lane_color[3] = {140.0 / 255.0, 140.0 / 255.0, 140.0 / 255.0};
-    float path_color[4] = {15.0 / 255.0, 188.0 / 255.0, 249.0 / 255.0, 0.9};
-    float edge_color[4] = {255.0 / 255.0, 5.0 / 255.0, 5.0 / 255.0};
 
     float camera_min_dist = 4.0;
     float camera_max_dist = 50.0;
@@ -62,32 +58,23 @@ struct ConfigData
     float camera_init_dist = 20.0F;
     float camera_init_pitch = 16.0F;
     float camera_reset_time = 5.0F;
+    float camera_init_pitch_tp = 90.0F;
 
     bool thumbnail = false;
     bool is_night = false;
 
     int debug_text_size = 30;
-    int speed_text_size = 120;
-    int status_text_size = 25;
-    int icon_size = 120;
-    int indicator_size = 60;
-    int speed_limit_size = 120;
-    int lane_offset_size = 90;
+    int speed_text_size = 300;
+    int status_text_size = 30;
+    int icon_size = 240;
+    int indicator_size = 240;
     int debug_ui_size = 50;
+    int gear_ui_size = 100;
 
     int left_gap = 20;
     int right_gap = 20;
     int top_gap = 20;
-
     int normal_gap = 20;
-
-    float path_line_width = 0.25F;
-    float lane_line_width = 0.065F;
-    float road_edge_width = 0.05F;
-
-    float min_lane_offset = -0.5F;
-    float max_lane_offset = 0.5F;
-    float gap_lane_offset = 0.1F;
 };
 
 class Game : public Sample
@@ -115,11 +102,9 @@ class Game : public Sample
     void UpdateDayLight();
     void CreateUI();
     void SetHDR(bool hdr);
-    void UpdateLaneColor();
     void UpdateViewport();
     Node* CreateCarModel(const char* name, const char* mat_name);
 
-    void HandleOPMessage(OP::Message* msg);
     void HandleCustomMessage(SharedPtr< JSONFile > json);
     void UpdateDebugTouch(float dt);
 
@@ -127,7 +112,6 @@ class Game : public Sample
     void UpdateTPCamera(float dt);
     void UpdateFixedCamera(float dt);
     void UpdateKeyInput(float dt);
-    void UpdateNavigation(float dt);
 
     void DrawDebug();
     void Draw3D(float dt);
@@ -138,7 +122,6 @@ class Game : public Sample
     void HandleMouseButtonUp(StringHash eventType, VariantMap& eventData);
 
     void OnUIClicked(UIElement* e);
-    void TriggerLaneChange(int lc_dir);
 
   private:
     String op_ip_address_;
