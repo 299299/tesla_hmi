@@ -375,24 +375,6 @@ void Game::ReceiveDataFromOP()
     }
 }
 
-void Game::SyncToOP()
-{
-    auto elapsed = time_->GetElapsedTime();
-
-    if (elapsed - last_sync_time_ > 0.1F)
-    {
-        sync_str_ = "{";
-        sync_str_ += "\"test\":" + String(0) + ",";
-        sync_str_ += "}";
-
-        // printf ("sync_pub_=%p\n", sync_pub_);
-
-        auto ret = sync_pub_->send((char*)sync_str_.CString(), sync_str_.Length());
-        // URHO3D_LOGINFOF("sync to op %s ", buf_to_send);
-        last_sync_time_ = elapsed;
-    }
-}
-
 void Game::CreateScene()
 {
     scene_ = new Scene(context_);
@@ -1093,6 +1075,9 @@ void Game::Draw3D(float dt)
         auto* n = slot_nodes_[i];
         auto* g = n->GetComponent< CustomGeometry >();
 
+        Rect r = slot_to_rect(slot);
+        bool is_slot_selected = r.IsInside(Vector2(last_pick_pos_.x_, last_pick_pos_.z_));
+
         g->Clear();
         g->SetNumGeometries(1);
         g->SetDynamic(true);
@@ -1130,13 +1115,21 @@ void Game::Draw3D(float dt)
         bb->rotation_ = 0.0F;
         bb->enabled_ = true;
 
-        Rect r = slot_to_rect(slot);
-
-        if (r.IsInside(Vector2(last_pick_pos_.x_, last_pick_pos_.z_)))
+        if (is_slot_selected)
         {
             g->SetMaterial(parking_slot_sel_mat_);
             bb->size_ *= 1.2F;
             slot_selected_ = i;
+        }
+
+        if (car_status_.parking_state != 0)
+        {
+            bb->enabled_ = is_slot_selected;
+            if (!is_slot_selected)
+            {
+                g->Clear();
+                g->Commit();
+            }
         }
     }
 
@@ -1230,10 +1223,9 @@ void Game::Draw2D(float dt)
     ad_on_sprite_->SetRotation(-car_status_.steering_wheel);
     ad_off_sprite_->SetRotation(-car_status_.steering_wheel);
 
-    start_button_->SetVisible(slot_selected_ != -1);
+    start_button_->SetVisible(slot_selected_ != -1 && car_status_.parking_state == 0);
     auto btn_size = start_button_->GetSize();
     start_button_->SetPosition(vw / 2.0F, vh - btn_size.y_ / 2.0F - 30);
-
 
     auto left = 30;
     top = vh / 2.0F;
@@ -1400,6 +1392,11 @@ void Game::OnUIClicked(UIElement* e)
     else if (e == debug_clean_data_btn_)
     {
     }
+    else if (e == start_button_)
+    {
+        parking_button_clicked_ = 1;
+        printf ("start parking !!!! \n");
+    }
 }
 
 void Game::PickSlot(int x, int y)
@@ -1435,6 +1432,27 @@ bool Game::Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& 
     return false;
 }
 
+void Game::SyncToOP()
+{
+    auto elapsed = time_->GetElapsedTime();
+
+    if (elapsed - last_sync_time_ > 0.1F)
+    {
+        sync_str_ = "{";
+        sync_str_ += "\"start_parking\":" + String(parking_button_clicked_);
+        sync_str_ += ",";
+        sync_str_ +=  "\"pick_point_x\":" + String(last_pick_pos_.z_);
+        sync_str_ += ",";
+        sync_str_ +=  "\"pick_point_y\":" + String(-last_pick_pos_.x_);
+        sync_str_ += "}";
+
+        // printf ("sync_pub_=%p\n", sync_pub_);
+
+        auto ret = sync_pub_->send((char*)sync_str_.CString(), sync_str_.Length());
+        // URHO3D_LOGINFOF("sync to op %s ", buf_to_send);
+        last_sync_time_ = elapsed;
+    }
+}
 void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
 {
     op_status_ = 1;

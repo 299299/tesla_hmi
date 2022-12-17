@@ -226,6 +226,7 @@ class Game : public Sample
 
     Vector3 last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
     int slot_selected_ = -1;
+    int parking_button_clicked_ = 0;
 
     Sprite* start_button_;
 };
