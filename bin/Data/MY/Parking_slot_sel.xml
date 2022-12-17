@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<material>
+    <technique name="Techniques/DiffAlpha.xml" />
+    <texture unit="diffuse" name="MY/parking_slot_selected.png" />
+    <parameter name="MatDiffColor" value="1 1 1 1" />
+    <parameter name="MatSpecColor" value="1 1 1 1" />
+    <parameter name="MatEmissiveColor" value="0.1 0.1 0.1 1" />
+</material>

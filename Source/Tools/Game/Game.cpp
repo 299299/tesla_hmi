@@ -37,6 +37,8 @@ static const int SET_IP = 2;
 static const int GAME_INIT = 3;
 
 const float turn_signal_flash_time = 0.5F;
+constexpr float parking_icon_h = 0.5F;
+constexpr float parking_icon_size = 0.35F;
 
 enum CameraState
 {
@@ -54,6 +56,24 @@ enum GearEunm
     GEAR_N = 2,
     GEAR_R = 1,
 };
+
+Rect slot_to_rect(const Slot& slot)
+{
+    float min_x = 9999;
+    float min_y = 9999;
+    float max_x = -9999;
+    float max_y = -9999;
+
+    for (const auto& p : slot.points)
+    {
+        min_x = std::min(min_x, p.x_);
+        max_x = std::max(max_x, p.x_);
+        min_y = std::min(min_y, p.z_);
+        max_y = std::max(max_y, p.z_);
+    }
+
+    return Rect(min_x, min_y, max_x, max_y);
+}
 
 URHO3D_DEFINE_APPLICATION_MAIN(Game);
 
@@ -105,11 +125,10 @@ Game::Game(Context* context)
       target_dist_(-1.0F),
       target_yaw_(-999.0F),
       touch_up_time_(0.0F),
-      camera_state_(kCameraTP),
+      camera_state_(-1),
       op_debug_mode_(0),
       camera_blend_speed_(0.1F),
       camera_blend_acceleration_(0.1F),
-      status_text_time_out_(5.0F),
       debug_test_(false)
 {
     URHO3D_LOGINFOF("************************ Game::Game() tid=%u ************************ ", pthread_self());
@@ -206,7 +225,11 @@ void Game::Start()
     time_ = GetSubsystem< Time >();
     ui_ = GetSubsystem< UI >();
     render_ = GetSubsystem< Renderer >();
-    cache_ = GetSubsystem< ResourceCache >();
+    cache_ = GetSubsystem< ResourceCache>();
+
+    // Cursor* cursor = ui_->GetCursor();
+    // if (cursor)
+    //     cursor->SetVisible(true);
 
     Sample::Start();
     CreateScene();
@@ -225,6 +248,10 @@ void Game::Start()
 
     message_time_ = time_->GetElapsedTime();
     android_ = (GetPlatform() == "Android");
+
+    if (!android_)
+       input_->SetMouseVisible(true);
+
     num_cpu_cores_ = GetNumPhysicalCPUs();
 
 #ifdef __ANDROID__
@@ -302,6 +329,7 @@ void Game::HandleSceneUpdate(StringHash eventType, VariantMap& eventData)
 
 void Game::Update(float timeStep)
 {
+    slot_selected_ = -1;
     ReceiveDataFromOP();
     UpdateInput(timeStep);
     SyncUI(timeStep);
@@ -351,11 +379,14 @@ void Game::SyncToOP()
 {
     auto elapsed = time_->GetElapsedTime();
 
-    if (elapsed - last_sync_time_ > 0.025F)
+    if (elapsed - last_sync_time_ > 0.1F)
     {
         sync_str_ = "{";
         sync_str_ += "\"test\":" + String(0) + ",";
         sync_str_ += "}";
+
+        // printf ("sync_pub_=%p\n", sync_pub_);
+
         auto ret = sync_pub_->send((char*)sync_str_.CString(), sync_str_.Length());
         // URHO3D_LOGINFOF("sync to op %s ", buf_to_send);
         last_sync_time_ = elapsed;
@@ -432,8 +463,10 @@ void Game::CreateScene()
         tail_light_ = light;
     }
 
-    line_mat_ = cache_->GetResource< Material >("MY/Lane.xml");
     parking_mat_ = cache_->GetResource< Material >("MY/Parking_icon.xml");
+    parking_slot_mat_ = cache_->GetResource< Material >("MY/Parking_slot.xml");
+    parking_sel_mat_ = cache_->GetResource< Material >("MY/Parking_icon_sel.xml");
+    parking_slot_sel_mat_ = cache_->GetResource< Material >("MY/Parking_slot_sel.xml");
 
     parking_node_ = scene_->CreateChild("ParkingSlot");
     auto* billboard_set = parking_node_->CreateComponent<BillboardSet>();
@@ -487,7 +520,7 @@ void Game::UpdateInput(float timeStep)
 
         if (target_cam_state == kCameraFixed)
         {
-
+            target_pitch_ = config_.camera_init_pitch;
         }
         else if (target_cam_state == kCameraTP)
         {
@@ -615,6 +648,17 @@ void Game::CreateUI()
         ad_off_sprite_->SetOpacity(0.9f);
         ad_off_sprite_->SetVisible(false);
         ad_off_sprite_->SetPosition(config_.left_gap + config_.icon_size / 2.0, icon_top);
+        ui_elements_.Push(ad_off_sprite_);
+    }
+
+    {
+        start_button_ = uiRoot->CreateChild< Sprite >("start_button");
+        start_button_->SetTexture(cache_->GetResource< Texture2D >("MY/start_button.png"));
+        start_button_->SetSize(config_.button_width, config_.button_width / config_.button_r_w_h);
+        start_button_->SetHotSpot(config_.button_width / 2.0, config_.button_width / 2.0 / config_.button_r_w_h);
+        start_button_->SetOpacity(0.9f);
+        start_button_->SetVisible(false);
+        ui_elements_.Push(start_button_);
     }
 
     debug_setting_btn_ = uiRoot->CreateChild< Text >("debug_setting");
@@ -771,7 +815,7 @@ void Game::UpdateTPCamera(float dt)
         target_dist_ = -1.0F;
     }
 
-    if (touch_up_time_ > config_.camera_reset_time && car_status_.speed_kmh > 0.0)
+    if (touch_up_time_ > config_.camera_reset_time)
     {
         target_pitch_ = config_.camera_init_pitch_tp;
         target_dist_ = config_.camera_init_dist;
@@ -1012,6 +1056,9 @@ void Game::DrawDebug()
                 debug->AddSphere(sp, Color::YELLOW, false);
             }
         }
+
+        Sphere sp2(last_pick_pos_, 0.25F);
+        debug->AddSphere(sp2, Color::RED, false);
     }
 
     // auto* cam = cameraNode_->GetComponent< Camera >();
@@ -1049,15 +1096,26 @@ void Game::Draw3D(float dt)
         g->Clear();
         g->SetNumGeometries(1);
         g->SetDynamic(true);
+        g->SetMaterial(parking_slot_mat_);
 
         g->BeginGeometry(0, TRIANGLE_STRIP);
 
         g->DefineVertex(slot.points[0]);
-        g->DefineVertex(slot.points[1]);
-        g->DefineVertex(slot.points[3]);
-        g->DefineVertex(slot.points[2]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(0, 1));
 
-        g->SetMaterial(line_mat_);
+        g->DefineVertex(slot.points[1]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(0, 0));
+
+        g->DefineVertex(slot.points[3]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(1, 1));
+
+        g->DefineVertex(slot.points[2]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(1, 0));
+
         g->Commit();
 
         Billboard* bb = billboard_set->GetBillboard(i);
@@ -1065,14 +1123,21 @@ void Game::Draw3D(float dt)
         for (int j=0; j<4; ++j)
             pos += slot.points[j];
         pos /= 4.0F;
-
         // printf ("pos=%s\n", pos.ToString().CString());
-
-        pos.y_ = 0.5F;
+        pos.y_ = parking_icon_h;
         bb->position_ = pos;
-        bb->size_ = Vector2(0.25F, 0.25F);
+        bb->size_ = Vector2(parking_icon_size, parking_icon_size);
         bb->rotation_ = 0.0F;
         bb->enabled_ = true;
+
+        Rect r = slot_to_rect(slot);
+
+        if (r.IsInside(Vector2(last_pick_pos_.x_, last_pick_pos_.z_)))
+        {
+            g->SetMaterial(parking_slot_sel_mat_);
+            bb->size_ *= 1.2F;
+            slot_selected_ = i;
+        }
     }
 
     billboard_set->Commit();
@@ -1089,12 +1154,7 @@ void Game::Draw2D(float dt)
 
     if (op_status_ == 1)
     {
-        status_text_time_out_ -= dt;
-        if (status_text_time_out_ <= 0.0F)
-        {
-            status_text_->SetText("");
-            status_text_time_out_ = 0.0F;
-        }
+        status_text_->SetText("");
         String text = String((int)car_status_.speed_kmh);
         speed_text_->SetText(text);
         speed_hint_text_->SetText("km/h");
@@ -1102,17 +1162,14 @@ void Game::Draw2D(float dt)
     else if (op_status_ == 2)
     {
         status_text_->SetText("message time out !!!      ");
-        status_text_time_out_ = 5.0F;
     }
     else if (op_status_ == -1)
     {
         status_text_->SetText(op_ip_address_ + String(" ping failed"));
-        status_text_time_out_ = 5.0F;
     }
     else if (op_status_ == 0)
     {
         status_text_->SetText("CONNECTING");
-        status_text_time_out_ = 5.0F;
     }
 
     auto width = speed_text_->GetRowWidth(0);
@@ -1172,6 +1229,11 @@ void Game::Draw2D(float dt)
     ad_off_sprite_->SetVisible(!car_status_.ad_on);
     ad_on_sprite_->SetRotation(-car_status_.steering_wheel);
     ad_off_sprite_->SetRotation(-car_status_.steering_wheel);
+
+    start_button_->SetVisible(slot_selected_ != -1);
+    auto btn_size = start_button_->GetSize();
+    start_button_->SetPosition(vw / 2.0F, vh - btn_size.y_ / 2.0F - 30);
+
 
     auto left = 30;
     top = vh / 2.0F;
@@ -1290,10 +1352,10 @@ void Game::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
 
     auto* uiRoot = GetSubsystem< UI >();
     auto touch_element = uiRoot->GetElementAt(x, y, false);
-    if (!touch_element)
-        return;
-
-    OnUIClicked(touch_element);
+    if (touch_element)
+        OnUIClicked(touch_element);
+    else
+        PickSlot(x, y);
 }
 
 void Game::HandleControlClicked(StringHash eventType, VariantMap& eventData)
@@ -1304,7 +1366,15 @@ void Game::HandleControlClicked(StringHash eventType, VariantMap& eventData)
 
 void Game::HandleMouseButtonUp(StringHash eventType, VariantMap& eventData)
 {
-    OnUIClicked(ui_->GetElementAt(input_->GetMousePosition(), false));
+    int x = input_->GetMousePosition().x_;
+    int y = input_->GetMousePosition().y_;
+
+    auto* uiRoot = GetSubsystem< UI >();
+    auto touch_element = uiRoot->GetElementAt(x, y, false);
+    if (touch_element)
+        OnUIClicked(touch_element);
+    else
+        PickSlot(x, y);
 }
 
 void Game::OnUIClicked(UIElement* e)
@@ -1332,6 +1402,39 @@ void Game::OnUIClicked(UIElement* e)
     }
 }
 
+void Game::PickSlot(int x, int y)
+{
+    if (car_status_.parking_state != 0)
+        return;
+    last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
+    Vector3 hitPos;
+    Drawable* hitDrawable;
+    Raycast(x, y, 250.0f, last_pick_pos_, hitDrawable);
+    last_pick_pos_.y_ = 0.0F;
+    URHO3D_LOGINFOF("x=%d, y=%d, pick pos = %s", x, y, last_pick_pos_.ToString().CString());
+}
+
+bool Game::Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& hitDrawable)
+{
+    hitDrawable = nullptr;
+    auto* graphics = GetSubsystem<Graphics>();
+    auto* camera = cameraNode_->GetComponent<Camera>();
+    Ray cameraRay = camera->GetScreenRay((float)x / graphics->GetWidth(), (float)y / graphics->GetHeight());
+    // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
+    PODVector<RayQueryResult> results;
+    RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
+    scene_->GetComponent<Octree>()->RaycastSingle(query);
+    if (results.Size())
+    {
+        RayQueryResult& result = results[0];
+        hitPos = result.position_;
+        hitDrawable = result.drawable_;
+        return true;
+    }
+
+    return false;
+}
+
 void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
 {
     op_status_ = 1;
@@ -1345,6 +1448,7 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
     car_status_.turn_signal = json_root.Get("turn_signal").GetInt();
     car_status_.brake_lights = json_root.Get("brake_lights").GetBool();
     car_status_.ad_on = json_root.Get("ad_on").GetBool();
+    car_status_.parking_state = json_root.Get("parking_state").GetInt();
 
     car_status_.slots.clear();
 

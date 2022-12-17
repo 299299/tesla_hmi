@@ -36,6 +36,7 @@ struct VehicleStatus
     int gear = 0;
     int turn_signal = 0;
     bool brake_lights = false;
+    int parking_state = 0;
 
     std::vector< Slot > slots;
 };
@@ -67,6 +68,8 @@ struct ConfigData
     int speed_text_size = 300;
     int status_text_size = 30;
     int icon_size = 240;
+    int button_width = 400;
+    float button_r_w_h = 2.9F;
     int indicator_size = 240;
     int debug_ui_size = 50;
     int gear_ui_size = 100;
@@ -122,6 +125,10 @@ class Game : public Sample
     void HandleMouseButtonUp(StringHash eventType, VariantMap& eventData);
 
     void OnUIClicked(UIElement* e);
+
+    bool Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& hitDrawable);
+
+    void PickSlot(int x, int y);
 
   private:
     String op_ip_address_;
@@ -206,12 +213,19 @@ class Game : public Sample
     Node* ego_node_;
     SharedPtr< Material > ego_mat_;
 
-    float status_text_time_out_;
-
     bool debug_test_;
 
     Node* parking_node_;
     std::vector< Node* > slot_nodes_;
-    Material* line_mat_;
+
     Material* parking_mat_;
+    Material* parking_slot_mat_;
+
+    Material* parking_sel_mat_;
+    Material* parking_slot_sel_mat_;
+
+    Vector3 last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
+    int slot_selected_ = -1;
+
+    Sprite* start_button_;
 };
