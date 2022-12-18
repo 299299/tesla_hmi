@@ -59,7 +59,7 @@ struct ConfigData
 
     float camera_init_dist = 30.0F;
     float camera_init_pitch = 16.0F;
-    float camera_reset_time = 5.0F;
+    float camera_reset_time = 4.0F;
     float camera_init_pitch_tp = 75.0F;
 
     bool thumbnail = false;
