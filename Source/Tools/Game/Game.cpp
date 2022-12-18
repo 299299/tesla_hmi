@@ -39,6 +39,7 @@ static const int GAME_INIT = 3;
 const float turn_signal_flash_time = 0.5F;
 constexpr float parking_icon_h = 0.5F;
 constexpr float parking_icon_size = 0.35F;
+constexpr float car_mesh_offset = 1.0F;
 
 enum CameraState
 {
@@ -225,7 +226,7 @@ void Game::Start()
     time_ = GetSubsystem< Time >();
     ui_ = GetSubsystem< UI >();
     render_ = GetSubsystem< Renderer >();
-    cache_ = GetSubsystem< ResourceCache>();
+    cache_ = GetSubsystem< ResourceCache >();
 
     // Cursor* cursor = ui_->GetCursor();
     // if (cursor)
@@ -250,7 +251,7 @@ void Game::Start()
     android_ = (GetPlatform() == "Android");
 
     if (!android_)
-       input_->SetMouseVisible(true);
+        input_->SetMouseVisible(true);
 
     num_cpu_cores_ = GetNumPhysicalCPUs();
 
@@ -405,11 +406,23 @@ void Game::CreateScene()
     // cameraNode_->LookAt(Vector3(0, 0, 0));
     camera->SetFarClip(500.0f);
 
-    auto* lightNode = scene_->CreateChild("Light");
+    /// reference
+    // auto* boxNode = scene_->CreateChild("Box_Ref");
+    // boxNode->SetPosition(Vector3(5,CAR_HEIGHT/2.0,0));
+    // auto* boxObject = boxNode->CreateComponent<StaticModel>();
+    // boxObject->SetModel(cache_->GetResource<Model>("Models/Box.mdl"));
+    // set_scale_by_car_size(boxObject);
+
+    ego_node_ = CreateCarModel("EgoCar", "MY/lexus.xml");
+    ego_node_->SetEnabled(true);
+    ego_node_->SetPosition(Vector3::ZERO);
+    ego_mat_ = cache_->GetResource< Material >("MY/lexus.xml");
+
+    auto* lightNode = ego_node_->CreateChild("FrontLight");
     auto* light = lightNode->CreateComponent< Light >();
     light->SetLightType(LIGHT_SPOT);
     light->SetRange(30.0);
-    lightNode->SetPosition(Vector3(0, 0.5, 0.5));
+    lightNode->SetPosition(Vector3(0, 0.5, 0.5 + car_mesh_offset));
     lightNode->SetDirection(Vector3(0, 0, 1.0F));
     light->SetSpecularIntensity(10.0f);
     light->SetFov(45.0);
@@ -423,21 +436,9 @@ void Game::CreateScene()
     }
     front_light_ = light;
 
-    /// reference
-    // auto* boxNode = scene_->CreateChild("Box_Ref");
-    // boxNode->SetPosition(Vector3(5,CAR_HEIGHT/2.0,0));
-    // auto* boxObject = boxNode->CreateComponent<StaticModel>();
-    // boxObject->SetModel(cache_->GetResource<Model>("Models/Box.mdl"));
-    // set_scale_by_car_size(boxObject);
-
-    ego_node_ = CreateCarModel("EgoCar", "MY/lexus.xml");
-    ego_node_->SetEnabled(true);
-    ego_node_->SetPosition(Vector3::ZERO);
-    ego_mat_ = cache_->GetResource< Material >("MY/lexus.xml");
-
     {
-        auto* node = scene_->CreateChild("TailLight");
-        node->SetPosition(Vector3(TAIL_LIGHT_X, TAIL_LIGHT_Y, TAIL_LIGHT_Z));
+        auto* node = ego_node_->CreateChild("TailLight");
+        node->SetPosition(Vector3(TAIL_LIGHT_X, TAIL_LIGHT_Y, TAIL_LIGHT_Z + car_mesh_offset));
         auto* light = node->CreateComponent< Light >();
         light->SetLightType(LIGHT_POINT);
         light->SetRange(TAIL_LIGHT_RANGE);
@@ -452,7 +453,7 @@ void Game::CreateScene()
     parking_slot_sel_mat_ = cache_->GetResource< Material >("MY/Parking_slot_sel.xml");
 
     parking_node_ = scene_->CreateChild("ParkingSlot");
-    auto* billboard_set = parking_node_->CreateComponent<BillboardSet>();
+    auto* billboard_set = parking_node_->CreateComponent< BillboardSet >();
     billboard_set->SetMaterial(parking_mat_);
     billboard_set->SetSorted(true);
     billboard_set->SetFaceCameraMode(FC_LOOKAT_XYZ);
@@ -743,13 +744,16 @@ void Game::UpdateViewport()
 Node* Game::CreateCarModel(const char* name, const char* mat_name)
 {
     auto* node = scene_->CreateChild(name);
-    auto* car_model = node->CreateComponent< StaticModel >();
+    auto* offset_node = node->CreateChild("offset");
+    offset_node->SetPosition(Vector3(0, 0, car_mesh_offset));
+    auto* render_node = offset_node->CreateChild("render");
+    auto* car_model = render_node->CreateComponent< StaticModel >();
     car_model->SetModel(cache_->GetResource< Model >("MY/lexus.mdl"));
     car_model->SetMaterial(cache_->GetResource< Material >(mat_name));
     Quaternion q;
     // q.FromEulerAngles(0, 180, 0);
     q.FromEulerAngles(90, 180, 90);
-    node->SetRotation(q);
+    render_node->SetRotation(q);
     set_scale_by_car_size(car_model);
     node->SetEnabled(false);
     return node;
@@ -1052,11 +1056,23 @@ void Game::DrawDebug()
 
 void Game::Draw3D(float dt)
 {
+    ego_node_->SetPosition(Vector3(-car_status_.pos_y, 0, car_status_.pos_x));
+    Quaternion q;
+    q.FromEulerAngles(0, car_status_.yaw, 0);
+    ego_node_->SetRotation(q);
+
+    if (parking_button_clicked_ == 0)
+    {
+        parking_node_->SetPosition(ego_node_->GetPosition());
+        parking_node_->SetRotation(ego_node_->GetRotation());
+    }
+
+
     tail_light_->SetEnabled(car_status_.brake_lights);
 
     if (parking_button_clicked_ == 1)
     {
-        auto* billboard_set = parking_node_->GetComponent<BillboardSet>();
+        auto* billboard_set = parking_node_->GetComponent< BillboardSet >();
         int num = slot_nodes_.size();
         for (int i = 0; i < num; ++i)
         {
@@ -1081,12 +1097,12 @@ void Game::Draw3D(float dt)
 
         while (car_status_.slots.size() > slot_nodes_.size())
         {
-            auto node = scene_->CreateChild("slot");
+            auto node = parking_node_->CreateChild("slot");
             node->CreateComponent< CustomGeometry >();
             slot_nodes_.push_back(node);
         }
 
-        auto* billboard_set = parking_node_->GetComponent<BillboardSet>();
+        auto* billboard_set = parking_node_->GetComponent< BillboardSet >();
         billboard_set->SetNumBillboards(car_status_.slots.size());
 
         int num = car_status_.slots.size();
@@ -1126,7 +1142,7 @@ void Game::Draw3D(float dt)
 
             Billboard* bb = billboard_set->GetBillboard(i);
             Vector3 pos = Vector3::ZERO;
-            for (int j=0; j<4; ++j)
+            for (int j = 0; j < 4; ++j)
                 pos += slot.points[j];
             pos /= 4.0F;
             // printf ("pos=%s\n", pos.ToString().CString());
@@ -1406,7 +1422,7 @@ void Game::OnUIClicked(UIElement* e)
     else if (e == start_button_)
     {
         parking_button_clicked_ = 1;
-        printf ("start parking !!!! \n");
+        printf("start parking !!!! \n");
     }
 }
 
@@ -1425,13 +1441,13 @@ void Game::PickSlot(int x, int y)
 bool Game::Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& hitDrawable)
 {
     hitDrawable = nullptr;
-    auto* graphics = GetSubsystem<Graphics>();
-    auto* camera = cameraNode_->GetComponent<Camera>();
+    auto* graphics = GetSubsystem< Graphics >();
+    auto* camera = cameraNode_->GetComponent< Camera >();
     Ray cameraRay = camera->GetScreenRay((float)x / graphics->GetWidth(), (float)y / graphics->GetHeight());
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-    PODVector<RayQueryResult> results;
+    PODVector< RayQueryResult > results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
-    scene_->GetComponent<Octree>()->RaycastSingle(query);
+    scene_->GetComponent< Octree >()->RaycastSingle(query);
     if (results.Size())
     {
         RayQueryResult& result = results[0];
@@ -1458,9 +1474,9 @@ void Game::SyncToOP()
         sync_str_ = "{";
         sync_str_ += "\"start_parking\":" + String(parking_button_clicked_);
         sync_str_ += ",";
-        sync_str_ +=  "\"pick_point_x\":" + String(last_pick_pos_.z_);
+        sync_str_ += "\"pick_point_x\":" + String(last_pick_pos_.z_);
         sync_str_ += ",";
-        sync_str_ +=  "\"pick_point_y\":" + String(-last_pick_pos_.x_);
+        sync_str_ += "\"pick_point_y\":" + String(-last_pick_pos_.x_);
         sync_str_ += "}";
 
         auto ret = sync_pub_->send((char*)sync_str_.CString(), sync_str_.Length());
@@ -1478,6 +1494,7 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
     car_status_.steering_wheel = json_root.Get("steering_wheel").GetFloat();
     car_status_.pos_x = json_root.Get("x").GetFloat();
     car_status_.pos_y = json_root.Get("y").GetFloat();
+    car_status_.yaw = -json_root.Get("yaw").GetFloat() * M_RADTODEG;
     car_status_.turn_signal = json_root.Get("turn_signal").GetInt();
     car_status_.brake_lights = json_root.Get("brake_lights").GetBool();
     car_status_.ad_on = json_root.Get("ad_on").GetBool();

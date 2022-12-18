@@ -31,6 +31,7 @@ struct VehicleStatus
     bool ad_on = false;
     float pos_x = 0.0F;
     float pos_y = 0.0F;
+    float yaw = 0.0F;
     float steering_wheel = 0.0F;
     float speed_kmh = 0.0F;
     int gear = 0;
