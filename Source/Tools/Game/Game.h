@@ -57,7 +57,7 @@ struct ConfigData
     float camera_min_dist = 4.0;
     float camera_max_dist = 50.0;
 
-    float camera_init_dist = 20.0F;
+    float camera_init_dist = 30.0F;
     float camera_init_pitch = 16.0F;
     float camera_reset_time = 5.0F;
     float camera_init_pitch_tp = 75.0F;

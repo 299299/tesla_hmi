@@ -4,5 +4,5 @@
 	<texture unit="diffuse" name="MY/Lexus.jpg" />
 	<parameter name="MatDiffColor" value="1 1 1 1" />
 	<parameter name="MatSpecColor" value="1 1 1 1" />
-	<parameter name="MatEmissiveColor" value="0.1 0.1 0.1 1" />
+	<parameter name="MatEmissiveColor" value="0.25 0.25 0.25 1" />
 </material>

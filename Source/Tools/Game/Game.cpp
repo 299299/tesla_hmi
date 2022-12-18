@@ -269,9 +269,9 @@ void Game::SetHDR(bool hdr)
 
     UpdateViewport();
 
-    bool is_low_end = android_ && (num_cpu_cores_ < 6);
-    if (is_low_end)
-        return;
+    // bool is_low_end = android_ && (num_cpu_cores_ < 6);
+    // if (is_low_end)
+    //     return;
 
     render_path_ = viewport->GetRenderPath()->Clone();
     if (hdr)
@@ -538,7 +538,7 @@ void Game::UpdateDayLight()
 
     Vector4 ego_color(0.1, 0.1, 0.1, 1);
     if (!is_day)
-        ego_color = Vector4(0.25, 0.25, 0.25, 1);
+        ego_color = Vector4(0.35, 0.35, 0.45, 1);
     ego_mat_->SetShaderParameter("MatEmissiveColor", ego_color);
 }
 
@@ -1067,7 +1067,6 @@ void Game::Draw3D(float dt)
         parking_node_->SetRotation(ego_node_->GetRotation());
     }
 
-
     tail_light_->SetEnabled(car_status_.brake_lights);
 
     if (parking_button_clicked_ == 1)
@@ -1161,6 +1160,8 @@ void Game::Draw3D(float dt)
         }
         billboard_set->Commit();
     }
+
+    UpdateDayLight();
 }
 
 void Game::Draw2D(float dt)
@@ -1499,6 +1500,7 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
     car_status_.brake_lights = json_root.Get("brake_lights").GetBool();
     car_status_.ad_on = json_root.Get("ad_on").GetBool();
     car_status_.parking_state = json_root.Get("parking_state").GetInt();
+    config_.is_night = json_root.Get("is_night").GetBool();
 
     car_status_.slots.clear();
 
