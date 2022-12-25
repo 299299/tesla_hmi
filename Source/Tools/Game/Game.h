@@ -39,6 +39,9 @@ struct VehicleStatus
     bool brake_lights = false;
     int parking_state = 0;
 
+    Slot dest_slot;
+    Slot trajectory;
+
     std::vector< Slot > slots;
 };
 
@@ -59,7 +62,7 @@ struct ConfigData
 
     float camera_init_dist = 30.0F;
     float camera_init_pitch = 16.0F;
-    float camera_reset_time = 4.0F;
+    float camera_reset_time = 5.0F;
     float camera_init_pitch_tp = 75.0F;
 
     bool thumbnail = false;
@@ -120,6 +123,8 @@ class Game : public Sample
     void DrawDebug();
     void Draw3D(float dt);
     void Draw2D(float dt);
+    void DrawSlots(float dt);
+    void DrawMotionPlanning(float dt);
 
     void HandleTouchEnd(StringHash eventType, VariantMap& eventData);
     void HandleControlClicked(StringHash eventType, VariantMap& eventData);
@@ -218,6 +223,8 @@ class Game : public Sample
 
     Node* parking_node_;
     std::vector< Node* > slot_nodes_;
+    Node* dest_node_;
+    Node* trajectory_node_;
 
     Material* parking_mat_;
     Material* parking_slot_mat_;
@@ -226,8 +233,6 @@ class Game : public Sample
     Material* parking_slot_sel_mat_;
 
     Vector3 last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
-    int slot_selected_ = -1;
-    int parking_button_clicked_ = 0;
-
     Sprite* start_button_;
+    int parking_button_clicked_ = 0;
 };

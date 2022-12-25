@@ -37,9 +37,10 @@ static const int SET_IP = 2;
 static const int GAME_INIT = 3;
 
 const float turn_signal_flash_time = 0.5F;
-constexpr float parking_icon_h = 0.5F;
+constexpr float parking_icon_h = 0.1F;
 constexpr float parking_icon_size = 0.35F;
 constexpr float car_mesh_offset = 1.0F;
+constexpr float trajectory_icon_size = 0.1F;
 
 enum CameraState
 {
@@ -74,6 +75,47 @@ Rect slot_to_rect(const Slot& slot)
     }
 
     return Rect(min_x, min_y, max_x, max_y);
+}
+
+Slot json_to_trajectory(const JSONValue& json)
+{
+    Slot slot;
+    for (auto j=0U; j<json.Size(); j+=2)
+    {
+        slot.points.Push(Vector3(-json[j + 1].GetFloat(), 0, json[j].GetFloat()));
+    }
+    return slot;
+}
+
+Slot json_to_slot(const JSONValue& json)
+{
+    if (json.Size() < 8)
+        return Slot();
+    return json_to_trajectory(json);
+}
+
+void DrawSlot(const Slot& slot, CustomGeometry* g)
+{
+    g->Clear();
+    if (slot.points.Size() > 0)
+    {
+        g->SetNumGeometries(1);
+        g->SetDynamic(true);
+        g->BeginGeometry(0, TRIANGLE_STRIP);
+        g->DefineVertex(slot.points[0]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(0, 1));
+        g->DefineVertex(slot.points[1]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(0, 0));
+        g->DefineVertex(slot.points[3]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(1, 1));
+        g->DefineVertex(slot.points[2]);
+        g->DefineNormal(Vector3::UP);
+        g->DefineTexCoord(Vector2(1, 0));
+    }
+    g->Commit();
 }
 
 URHO3D_DEFINE_APPLICATION_MAIN(Game);
@@ -168,11 +210,7 @@ void Game::InitOP()
 
     if (vec.Size() != 4)
     {
-#ifdef __ANDROID__
-        const char* ip_list[] = {"192.168.43.138", "192.168.137.138"};
-#else
-        const char* ip_list[] = {"192.168.1.17", "192.168.43.138", "127.0.0.1"};
-#endif
+        const char* ip_list[] = {"192.168.1.24", "192.168.43.138", "127.0.0.1"};
         for (int i = 0; i < sizeof(ip_list) / sizeof(ip_list[0]); ++i)
         {
             std::string details;
@@ -330,8 +368,6 @@ void Game::HandleSceneUpdate(StringHash eventType, VariantMap& eventData)
 
 void Game::Update(float timeStep)
 {
-    if (parking_button_clicked_ == 0)
-        slot_selected_ = -1;
     ReceiveDataFromOP();
     UpdateInput(timeStep);
     SyncUI(timeStep);
@@ -368,7 +404,7 @@ void Game::ReceiveDataFromOP()
         memset(p, 0, size + 1);
         memcpy(p, msg->getData(), size);
         String s(p);
-        // URHO3D_LOGINFO(s);
+        URHO3D_LOGINFO(s);
         SharedPtr< JSONFile > json(new JSONFile(context_));
         if (json->FromString(s))
             HandleCustomMessage(json);
@@ -455,6 +491,17 @@ void Game::CreateScene()
     parking_node_ = scene_->CreateChild("ParkingSlot");
     auto* billboard_set = parking_node_->CreateComponent< BillboardSet >();
     billboard_set->SetMaterial(parking_mat_);
+    billboard_set->SetSorted(true);
+    billboard_set->SetFaceCameraMode(FC_LOOKAT_XYZ);
+
+    dest_node_ = scene_->CreateChild("ParkingDest");
+    auto g = dest_node_->CreateComponent<CustomGeometry>();
+    g->SetMaterial(parking_slot_sel_mat_);
+
+    trajectory_node_ = scene_->CreateChild("Trajectory");
+    billboard_set = trajectory_node_->CreateComponent<BillboardSet>();
+    auto t_m = cache_->GetResource< Material >("MY/Parking_icon_sel.xml");
+    billboard_set->SetMaterial(t_m);
     billboard_set->SetSorted(true);
     billboard_set->SetFaceCameraMode(FC_LOOKAT_XYZ);
 
@@ -1026,12 +1073,13 @@ void Game::DrawDebug()
     if (config_.debug)
     {
         DebugRenderer* debug = scene_->GetComponent< DebugRenderer >();
-        Sphere sp(Vector3::ZERO, 0.25F);
-        debug->AddSphere(sp, Color::RED, false);
+        // Sphere sp(Vector3::ZERO, 0.25F);
+        // debug->AddSphere(sp, Color::RED, false);
         front_light_->DrawDebugGeometry(debug, true);
         tail_light_->DrawDebugGeometry(debug, true);
 
         debug->AddNode(ego_node_->GetParent(), 2.0, false);
+        debug->AddNode(ego_node_, 2.0, false);
 
         for (auto ele : ui_elements_)
         {
@@ -1041,9 +1089,22 @@ void Game::DrawDebug()
         {
             for (auto p : slot.points)
             {
-                Sphere sp(p, 0.1F);
+                auto worldPos = parking_node_->LocalToWorld(p);
+                Sphere sp(worldPos, 0.1F);
                 debug->AddSphere(sp, Color::YELLOW, false);
             }
+        }
+
+        for (auto p : car_status_.dest_slot.points)
+        {
+            Sphere sp(p, 0.2F);
+            debug->AddSphere(sp, Color::RED, false);
+        }
+
+        for (auto p : car_status_.trajectory.points)
+        {
+            Sphere sp(p, 0.2F);
+            debug->AddSphere(sp, Color::BLUE, false);
         }
 
         Sphere sp2(last_pick_pos_, 0.25F);
@@ -1061,105 +1122,10 @@ void Game::Draw3D(float dt)
     q.FromEulerAngles(0, car_status_.yaw, 0);
     ego_node_->SetRotation(q);
 
-    if (parking_button_clicked_ == 0)
-    {
-        parking_node_->SetPosition(ego_node_->GetPosition());
-        parking_node_->SetRotation(ego_node_->GetRotation());
-    }
-
     tail_light_->SetEnabled(car_status_.brake_lights);
 
-    if (parking_button_clicked_ == 1)
-    {
-        auto* billboard_set = parking_node_->GetComponent< BillboardSet >();
-        int num = slot_nodes_.size();
-        for (int i = 0; i < num; ++i)
-        {
-            Billboard* bb = billboard_set->GetBillboard(i);
-            if (i != slot_selected_)
-            {
-                auto g = slot_nodes_[i]->GetComponent< CustomGeometry >();
-                g->Clear();
-                g->Commit();
-                bb->enabled_ = false;
-            }
-        }
-    }
-    else
-    {
-        for (auto n : slot_nodes_)
-        {
-            auto g = n->GetComponent< CustomGeometry >();
-            g->Clear();
-            g->Commit();
-        }
-
-        while (car_status_.slots.size() > slot_nodes_.size())
-        {
-            auto node = parking_node_->CreateChild("slot");
-            node->CreateComponent< CustomGeometry >();
-            slot_nodes_.push_back(node);
-        }
-
-        auto* billboard_set = parking_node_->GetComponent< BillboardSet >();
-        billboard_set->SetNumBillboards(car_status_.slots.size());
-
-        int num = car_status_.slots.size();
-        for (int i = 0; i < num; ++i)
-        {
-            const auto& slot = car_status_.slots[i];
-            auto* n = slot_nodes_[i];
-            auto* g = n->GetComponent< CustomGeometry >();
-
-            Rect r = slot_to_rect(slot);
-            bool is_slot_selected = r.IsInside(Vector2(last_pick_pos_.x_, last_pick_pos_.z_));
-
-            g->Clear();
-            g->SetNumGeometries(1);
-            g->SetDynamic(true);
-            g->SetMaterial(parking_slot_mat_);
-
-            g->BeginGeometry(0, TRIANGLE_STRIP);
-
-            g->DefineVertex(slot.points[0]);
-            g->DefineNormal(Vector3::UP);
-            g->DefineTexCoord(Vector2(0, 1));
-
-            g->DefineVertex(slot.points[1]);
-            g->DefineNormal(Vector3::UP);
-            g->DefineTexCoord(Vector2(0, 0));
-
-            g->DefineVertex(slot.points[3]);
-            g->DefineNormal(Vector3::UP);
-            g->DefineTexCoord(Vector2(1, 1));
-
-            g->DefineVertex(slot.points[2]);
-            g->DefineNormal(Vector3::UP);
-            g->DefineTexCoord(Vector2(1, 0));
-
-            g->Commit();
-
-            Billboard* bb = billboard_set->GetBillboard(i);
-            Vector3 pos = Vector3::ZERO;
-            for (int j = 0; j < 4; ++j)
-                pos += slot.points[j];
-            pos /= 4.0F;
-            // printf ("pos=%s\n", pos.ToString().CString());
-            pos.y_ = parking_icon_h;
-            bb->position_ = pos;
-            bb->size_ = Vector2(parking_icon_size, parking_icon_size);
-            bb->rotation_ = 0.0F;
-            bb->enabled_ = true;
-
-            if (is_slot_selected)
-            {
-                g->SetMaterial(parking_slot_sel_mat_);
-                bb->size_ *= 1.2F;
-                slot_selected_ = i;
-            }
-        }
-        billboard_set->Commit();
-    }
+    DrawSlots(dt);
+    DrawMotionPlanning(dt);
 
     UpdateDayLight();
 }
@@ -1251,7 +1217,7 @@ void Game::Draw2D(float dt)
     ad_on_sprite_->SetRotation(-car_status_.steering_wheel);
     ad_off_sprite_->SetRotation(-car_status_.steering_wheel);
 
-    start_button_->SetVisible(slot_selected_ != -1 && parking_button_clicked_ == 0);
+    start_button_->SetVisible(car_status_.parking_state == 0 && car_status_.trajectory.points.Size() > 0);
     auto btn_size = start_button_->GetSize();
     start_button_->SetPosition(vw / 2.0F, vh - btn_size.y_ / 2.0F - 30);
 
@@ -1429,8 +1395,6 @@ void Game::OnUIClicked(UIElement* e)
 
 void Game::PickSlot(int x, int y)
 {
-    if (parking_button_clicked_ != 0)
-        return;
     last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
     Vector3 hitPos;
     Drawable* hitDrawable;
@@ -1469,8 +1433,7 @@ void Game::SyncToOP()
     }
 
     auto elapsed = time_->GetElapsedTime();
-
-    if (elapsed - last_sync_time_ > 0.1F)
+    if (elapsed - last_sync_time_ > 1.0F && car_status_.parking_state == 0)
     {
         sync_str_ = "{";
         sync_str_ += "\"start_parking\":" + String(parking_button_clicked_);
@@ -1484,7 +1447,11 @@ void Game::SyncToOP()
         // URHO3D_LOGINFOF("sync to op %s ", buf_to_send);
         last_sync_time_ = elapsed;
     }
+
+    if (car_status_.parking_state != 0)
+        parking_button_clicked_ = 0;
 }
+
 void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
 {
     op_status_ = 1;
@@ -1501,22 +1468,106 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
     car_status_.ad_on = json_root.Get("ad_on").GetBool();
     car_status_.parking_state = json_root.Get("parking_state").GetInt();
     config_.is_night = json_root.Get("is_night").GetBool();
+    car_status_.dest_slot = json_to_slot(json_root.Get("dest_slot"));
 
     car_status_.slots.clear();
-
     const auto& json_slots = json_root.Get("slot_detection");
     for (auto i = 0; i < json_slots.Size(); ++i)
     {
         const auto& json_slot = json_slots[i];
-        Slot slot;
-        int j = 0;
-        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
-        j += 2;
-        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
-        j += 2;
-        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
-        j += 2;
-        slot.points.Push(Vector3(-json_slot[j + 1].GetFloat(), 0, json_slot[j].GetFloat()));
-        car_status_.slots.push_back(slot);
+        car_status_.slots.push_back(json_to_slot(json_slot));
+    }
+    car_status_.trajectory = json_to_trajectory(json_root.Get("trajectory"));
+}
+
+void Game::DrawSlots(float dt)
+{
+    parking_node_->SetPosition(ego_node_->GetPosition());
+    parking_node_->SetRotation(ego_node_->GetRotation());
+
+    for (auto n : slot_nodes_)
+    {
+        auto g = n->GetComponent< CustomGeometry >();
+        g->Clear();
+        g->Commit();
+    }
+
+    while (car_status_.slots.size() > slot_nodes_.size())
+    {
+        auto node = parking_node_->CreateChild("slot");
+        node->CreateComponent< CustomGeometry >();
+        slot_nodes_.push_back(node);
+    }
+
+    auto* billboard_set = parking_node_->GetComponent< BillboardSet >();
+    billboard_set->SetNumBillboards(car_status_.slots.size());
+
+    int num = car_status_.slots.size();
+    for (int i = 0; i < num; ++i)
+    {
+        const auto& slot = car_status_.slots[i];
+        auto* n = slot_nodes_[i];
+        auto* g = n->GetComponent< CustomGeometry >();
+
+        // Rect r = slot_to_rect(slot);
+        // bool is_slot_selected = r.IsInside(Vector2(last_pick_pos_.x_, last_pick_pos_.z_));
+
+        DrawSlot(slot, g);
+
+        Billboard* bb = billboard_set->GetBillboard(i);
+        Vector3 pos = Vector3::ZERO;
+        for (int j = 0; j < 4; ++j)
+            pos += slot.points[j];
+        pos /= 4.0F;
+        // printf ("pos=%s\n", pos.ToString().CString());
+        pos.y_ = parking_icon_h;
+        bb->position_ = pos;
+        bb->size_ = Vector2(parking_icon_size, parking_icon_size);
+        bb->rotation_ = 0.0F;
+        bb->enabled_ = true;
+
+        // if (is_slot_selected)
+        // {
+        //     g->SetMaterial(parking_slot_sel_mat_);
+        //     bb->size_ *= 1.2F;
+        // }
+        // else
+        // {
+        //     g->SetMaterial(parking_slot_mat_);
+        // }
+        g->SetMaterial(parking_slot_mat_);
+    }
+    billboard_set->Commit();
+}
+
+void Game::DrawMotionPlanning(float dt)
+{
+    auto g = dest_node_->GetComponent< CustomGeometry >();
+    DrawSlot(car_status_.dest_slot, g);
+    g->SetMaterial(parking_slot_sel_mat_);
+
+    // for (auto i=0U; i<car_status_.dest_slot.points.Size(); ++i)
+    // {
+    //     printf ("p[%u]=%s \n", i, car_status_.dest_slot.points[i].ToString().CString());
+    // }
+
+    // for (auto i=0U; i<car_status_.trajectory.points.Size(); ++i)
+    // {
+    //     printf ("p[%u]=%s \n", i, car_status_.trajectory.points[i].ToString().CString());
+    // }
+
+    auto* billboard_set = trajectory_node_->GetComponent<BillboardSet>();
+    billboard_set->SetNumBillboards(car_status_.trajectory.points.Size());
+
+    for (auto i=0U; i<car_status_.trajectory.points.Size(); ++i)
+    {
+        const auto& p = car_status_.trajectory.points[i];
+        Billboard* bb = billboard_set->GetBillboard(i);
+        Vector3 pos = p;
+        // printf ("pos=%s\n", pos.ToString().CString());
+        bb->position_ = pos;
+        bb->size_ = Vector2(trajectory_icon_size, trajectory_icon_size);
+        bb->rotation_ = 0.0F;
+        bb->enabled_ = true;
     }
 }

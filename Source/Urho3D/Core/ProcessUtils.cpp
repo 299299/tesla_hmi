@@ -33,6 +33,7 @@
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
+#define M1_MAC
 #endif
 
 #if defined(IOS)
@@ -43,7 +44,9 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 #if defined(TARGET_OS_MAC) && defined(__arm64__)
 #define M1_MAC
 #else
+#ifndef M1_MAC
 #include <LibCpuId/src/libcpuid.h>
+#endif
 #endif
 #endif
 
