@@ -61,7 +61,7 @@ struct ConfigData
     float camera_max_dist = 50.0;
 
     float camera_init_dist = 30.0F;
-    float camera_init_pitch = 16.0F;
+    float camera_init_pitch = 80.0F;
     float camera_reset_time = 5.0F;
     float camera_init_pitch_tp = 75.0F;
 
@@ -236,7 +236,7 @@ class Game : public Sample
     Material* parking_sel_mat_;
     Material* parking_slot_sel_mat_;
 
-    Vector3 last_target_pos_ = Vector3(0, 2, 1);
+    Vector3 last_target_pos_ = Vector3(0, 0, 1);
 
     Vector3 last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
     Sprite* start_button_;

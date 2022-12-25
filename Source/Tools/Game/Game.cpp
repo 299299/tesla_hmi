@@ -551,10 +551,11 @@ void Game::UpdateInput(float timeStep)
     UpdateDebugTouch(timeStep);
 
     int target_cam_state = -1;
-    if (car_status_.gear == GEAR_P)
-        target_cam_state = kCameraFixed;
-    else if (car_status_.gear == GEAR_R || car_status_.gear == GEAR_D || car_status_.gear == GEAR_N)
-        target_cam_state = kCameraTP;
+    // if (car_status_.gear == GEAR_P || car_status_.gear == GEAR_N)
+    //     target_cam_state = kCameraFixed;
+    // else if (car_status_.gear == GEAR_R || car_status_.gear == GEAR_D)
+    //     target_cam_state = kCameraTP;
+    target_cam_state = kCameraTP;
 
     if (target_cam_state != camera_state_)
     {
@@ -839,7 +840,8 @@ void Game::UpdateFixedCamera(float dt)
 
     Quaternion q(config_.camera_init_pitch, 0, 0.0f);
     Vector3 target_pos = GetCameraTargetPos();
-    Vector3 eye_pos = q * Vector3(0, 10.0, -3.0) + target_pos;
+    // Vector3 eye_pos = q * Vector3(0, 10.0, -3.0) + target_pos;
+    Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
 
     auto cur_eye_pos = cameraNode_->GetPosition();
     auto diff = (eye_pos - cur_eye_pos) * 0.1F;
@@ -1605,8 +1607,10 @@ Vector3 Game::GetCameraTargetPos()
 {
     if (car_status_.parking_state == 0)
     {
-        Vector3 v = ego_node_->GetWorldPosition();
-        last_target_pos_ = Vector3(v.x_, last_target_pos_.y_, v.z_);
+        Vector3 vTarget = ego_node_->GetWorldPosition();
+        auto diff = (vTarget - last_target_pos_) * 0.1F;
+        diff.y_ = 0;
+        last_target_pos_ += diff;
     }
     return last_target_pos_;
 }
