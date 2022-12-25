@@ -16,11 +16,11 @@ void VS()
 void PS()
 {
     const float amount = 0.1;
-    const float toRadians = 3.14 / 180;
+    const float toRadians = 3.14 / 180.0;
     vec4 color = texture2D(sDiffMap, vScreenPos);
 
     float randomIntensity =
-        fract( 10000 * sin(
+        fract( 10000.0 * sin(
                 ( vScreenPos.x / cGBufferInvSize.x
                 + vScreenPos.y / cGBufferInvSize.y
                 * cElapsedTimePS) * toRadians)

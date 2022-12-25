@@ -335,17 +335,17 @@ void Game::SetHDR(bool hdr)
     }
     else
     {
-        // render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/Forward.xml"));
-        // render_path_->Append(cache_->GetResource< XMLFile >("PostProcess/FXAA2.xml"));
-        // // render_path_->Append(cache_->GetResource<XMLFile>("PostProcess/ColorCorrection.xml"));
-        // viewport->SetRenderPath(render_path_);
-        render_path_->Load(cache_->GetResource< XMLFile >("MY/myForwardDepth.xml"));
-        render_path_->SetEnabled("ao_only", false);
-        render_path_->SetEnabled("ssao", false);
-        render_path_->SetEnabled("oil_paint", true);
-        render_path_->SetEnabled("edge_detect", true);
-        render_path_->SetEnabled("posterization", false);
-        render_path_->SetEnabled("FXAA3", false);
+        render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/Forward.xml"));
+        render_path_->Append(cache_->GetResource< XMLFile >("PostProcess/FXAA2.xml"));
+        // render_path_->Append(cache_->GetResource<XMLFile>("PostProcess/ColorCorrection.xml"));
+        viewport->SetRenderPath(render_path_);
+        // render_path_->Load(cache_->GetResource< XMLFile >("MY/myForwardDepth.xml"));
+        // render_path_->SetEnabled("ao_only", false);
+        // render_path_->SetEnabled("ssao", false);
+        // render_path_->SetEnabled("oil_paint", true);
+        // render_path_->SetEnabled("edge_detect", true);
+        // render_path_->SetEnabled("posterization", false);
+        // render_path_->SetEnabled("FXAA3", false);
         // render_path_->SetEnabled("film_grain", true);
         // render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/ForwardDepth.xml"));
         // render_path_->Append(cache_->GetResource< XMLFile >("MY/Toon.xml"));
@@ -838,7 +838,7 @@ void Game::UpdateFixedCamera(float dt)
     camera_blend_speed_ = 0.05F;
 
     Quaternion q(config_.camera_init_pitch, 0, 0.0f);
-    Vector3 target_pos = Vector3(0, 2.0, 1.0);
+    Vector3 target_pos = GetCameraTargetPos();
     Vector3 eye_pos = q * Vector3(0, 10.0, -3.0) + target_pos;
 
     auto cur_eye_pos = cameraNode_->GetPosition();
@@ -934,7 +934,7 @@ void Game::UpdateTPCamera(float dt)
     camera_dist_ = Clamp(camera_dist_, config_.camera_min_dist, config_.camera_max_dist);
 
     Quaternion q(pitch_, yaw_, 0.0f);
-    Vector3 target_pos = Vector3(0, 2.0, 1.0);
+    Vector3 target_pos = GetCameraTargetPos();
     Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
 
     camera_blend_speed_ += camera_blend_acceleration_ * dt;
@@ -1599,4 +1599,14 @@ void Game::DrawMotionPlanning(float dt)
     //     ghost_nodes_[i]->SetWorldPosition(p);
     //     ghost_nodes_[i]->SetEnabledRecursive(true);
     // }
+}
+
+Vector3 Game::GetCameraTargetPos()
+{
+    if (car_status_.parking_state == 0)
+    {
+        Vector3 v = ego_node_->GetWorldPosition();
+        last_target_pos_ = Vector3(v.x_, last_target_pos_.y_, v.z_);
+    }
+    return last_target_pos_;
 }

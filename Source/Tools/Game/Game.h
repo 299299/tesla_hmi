@@ -47,7 +47,7 @@ struct VehicleStatus
 
 struct ConfigData
 {
-    bool hdr = false;
+    bool hdr = true;
     bool debug = false;
     bool shadow = false;
     bool water_plane = false;
@@ -135,6 +135,8 @@ class Game : public Sample
     bool Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& hitDrawable);
 
     void PickSlot(int x, int y);
+
+    Vector3 GetCameraTargetPos();
 
   private:
     String op_ip_address_;
@@ -233,6 +235,8 @@ class Game : public Sample
 
     Material* parking_sel_mat_;
     Material* parking_slot_sel_mat_;
+
+    Vector3 last_target_pos_ = Vector3(0, 2, 1);
 
     Vector3 last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
     Sprite* start_button_;
