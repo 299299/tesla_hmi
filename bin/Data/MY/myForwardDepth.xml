@@ -1,0 +1,43 @@
+<renderpath>
+    <rendertarget name="depth" sizedivisor="1 1" format="lineardepth" />
+    <command type="clear" color="1 1 1 1" depth="1.0" stencil="0" output="depth" />
+    <command type="scenepass" pass="depth" output="depth" />
+    <command type="clear" color="fog" depth="1.0" stencil="0" />
+    <command type="scenepass" pass="base" vertexlights="true" metadata="base" />
+    <command type="forwardlights" pass="light" />
+    <command type="scenepass" pass="postopaque" />
+    <command type="scenepass" pass="refract">
+        <texture unit="environment" name="viewport" />
+    </command>
+    <command type="scenepass" pass="alpha" vertexlights="true" sort="backtofront" metadata="alpha">
+        <texture unit="depth" name="depth" />
+    </command>
+    <command type="scenepass" pass="postalpha" sort="backtofront" />
+	<command type="quad" tag="ao_only" vs="ssao" ps="ssao" psdefines="AO_ONLY">
+        <texture unit="diffuse" name="viewport" />
+        <texture unit="emissive" name="depth" />
+    </command>
+    <command type="quad" tag="ssao" vs="ssao" ps="ssao">
+        <texture unit="diffuse" name="viewport" />
+        <texture unit="emissive" name="depth" />
+    </command>
+    <command type="quad" tag="oil_paint" vs="oil_paint" ps="oil_paint">
+        <texture unit="diffuse" name="viewport" />
+    </command>
+    <command type="quad" tag="edge_detect" vs="edge_detect" ps="edge_detect">
+        <parameter name="EdgeThreshold" value="0.01" />
+        <parameter name="EdgeColor" value="0 0 0 1" />
+        <texture unit="diffuse" name="viewport" />
+        <texture unit="emissive" name="depth" />
+    </command>
+    <command type="quad" tag="posterization" vs="posterization" ps="posterization">
+        <parameter name="PosterizationLevel" value="8" />
+        <texture unit="diffuse" name="viewport" />
+    </command>
+    <command type="quad" tag="FXAA3" vs="FXAA3" ps="FXAA3" psdefines="FXAA_QUALITY_PRESET=12" output="viewport">
+        <texture unit="diffuse" name="viewport" />
+    </command>
+    <command type="quad" tag="film_grain" vs="film_grain" ps="film_grain">
+        <texture unit="diffuse" name="viewport" />
+    </command>
+</renderpath>

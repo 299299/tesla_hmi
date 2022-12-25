@@ -226,6 +226,8 @@ class Game : public Sample
     Node* dest_node_;
     Node* trajectory_node_;
 
+    std::vector<Node*> ghost_nodes_;
+
     Material* parking_mat_;
     Material* parking_slot_mat_;
 

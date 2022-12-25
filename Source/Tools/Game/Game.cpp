@@ -40,7 +40,7 @@ const float turn_signal_flash_time = 0.5F;
 constexpr float parking_icon_h = 0.1F;
 constexpr float parking_icon_size = 0.35F;
 constexpr float car_mesh_offset = 1.0F;
-constexpr float trajectory_icon_size = 0.1F;
+constexpr float trajectory_icon_size = 0.2F;
 
 enum CameraState
 {
@@ -335,9 +335,18 @@ void Game::SetHDR(bool hdr)
     }
     else
     {
-        render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/Forward.xml"));
-        render_path_->Append(cache_->GetResource< XMLFile >("PostProcess/FXAA2.xml"));
-        // render_path_->Append(cache_->GetResource<XMLFile>("PostProcess/ColorCorrection.xml"));
+        // render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/Forward.xml"));
+        // render_path_->Append(cache_->GetResource< XMLFile >("PostProcess/FXAA2.xml"));
+        // // render_path_->Append(cache_->GetResource<XMLFile>("PostProcess/ColorCorrection.xml"));
+        // viewport->SetRenderPath(render_path_);
+        render_path_->Load(cache_->GetResource<XMLFile>("MY/myForwardDepth.xml"));
+        render_path_->SetEnabled("ao_only", false);
+        render_path_->SetEnabled("ssao", false);
+        render_path_->SetEnabled("oil_paint", true);
+        render_path_->SetEnabled("edge_detect", true);
+        render_path_->SetEnabled("posterization", false);
+        render_path_->SetEnabled("FXAA3", false);
+        render_path_->SetEnabled("film_grain", false);
         viewport->SetRenderPath(render_path_);
     }
 }
@@ -404,7 +413,7 @@ void Game::ReceiveDataFromOP()
         memset(p, 0, size + 1);
         memcpy(p, msg->getData(), size);
         String s(p);
-        URHO3D_LOGINFO(s);
+        // URHO3D_LOGINFO(s);
         SharedPtr< JSONFile > json(new JSONFile(context_));
         if (json->FromString(s))
             HandleCustomMessage(json);
@@ -500,7 +509,7 @@ void Game::CreateScene()
 
     trajectory_node_ = scene_->CreateChild("Trajectory");
     billboard_set = trajectory_node_->CreateComponent<BillboardSet>();
-    auto t_m = cache_->GetResource< Material >("MY/Parking_icon_sel.xml");
+    auto t_m = cache_->GetResource< Material >("MY/bullet_icon.xml");
     billboard_set->SetMaterial(t_m);
     billboard_set->SetSorted(true);
     billboard_set->SetFaceCameraMode(FC_LOOKAT_XYZ);
@@ -908,6 +917,7 @@ void Game::UpdateTPCamera(float dt)
             target_dist_ = -1.0F;
         }
     }
+
 
     if (target_yaw_ >= -100.0F)
     {
@@ -1542,19 +1552,10 @@ void Game::DrawSlots(float dt)
 
 void Game::DrawMotionPlanning(float dt)
 {
+    dest_node_->SetPosition(Vector3(0, 0.1F, 0));
     auto g = dest_node_->GetComponent< CustomGeometry >();
     DrawSlot(car_status_.dest_slot, g);
     g->SetMaterial(parking_slot_sel_mat_);
-
-    // for (auto i=0U; i<car_status_.dest_slot.points.Size(); ++i)
-    // {
-    //     printf ("p[%u]=%s \n", i, car_status_.dest_slot.points[i].ToString().CString());
-    // }
-
-    // for (auto i=0U; i<car_status_.trajectory.points.Size(); ++i)
-    // {
-    //     printf ("p[%u]=%s \n", i, car_status_.trajectory.points[i].ToString().CString());
-    // }
 
     auto* billboard_set = trajectory_node_->GetComponent<BillboardSet>();
     billboard_set->SetNumBillboards(car_status_.trajectory.points.Size());
@@ -1570,4 +1571,30 @@ void Game::DrawMotionPlanning(float dt)
         bb->rotation_ = 0.0F;
         bb->enabled_ = true;
     }
+
+    // int input_num = car_status_.trajectory.points.Size();
+    // int cur_num = ghost_nodes_.size();
+
+    // for (auto n : ghost_nodes_)
+    // {
+    //     n->SetEnabledRecursive(false);
+    // }
+
+    // int create_num = 0;
+    // if (input_num > cur_num)
+    // {
+    //     create_num = (input_num - cur_num);
+    //     for (int i=0; i<create_num; ++i)
+    //     {
+    //         auto* node = CreateCarModel("ghost_car", "MY/LeadCar.xml");
+    //         ghost_nodes_.push_back(node);
+    //     }
+    // }
+
+    // for (auto i=0U; i<car_status_.trajectory.points.Size(); ++i)
+    // {
+    //     const auto& p = car_status_.trajectory.points[i];
+    //     ghost_nodes_[i]->SetWorldPosition(p);
+    //     ghost_nodes_[i]->SetEnabledRecursive(true);
+    // }
 }
