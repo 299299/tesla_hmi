@@ -41,4 +41,7 @@ cp -rf ${URHO_DIR}/Android/res ${TARGET_DIR}/app/src/main/
 #cp ${URHO_DIR}/Android/build.gradle-project ${TARGET_DIR}/build.gradle
 #cp ${URHO_DIR}/Android/build.gradle-app ${TARGET_DIR}/app/build.gradle
 
+cp -rf bin/CoreData/* ${TARGET_DIR}/app/src/main/assets/CoreData/
+cp -rf bin/Data/* ${TARGET_DIR}/app/src/main/assets/Data/
+
 sync

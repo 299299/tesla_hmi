@@ -80,7 +80,7 @@ Rect slot_to_rect(const Slot& slot)
 Slot json_to_trajectory(const JSONValue& json)
 {
     Slot slot;
-    for (auto j=0U; j<json.Size(); j+=2)
+    for (auto j = 0U; j < json.Size(); j += 2)
     {
         slot.points.Push(Vector3(-json[j + 1].GetFloat(), 0, json[j].GetFloat()));
     }
@@ -339,17 +339,16 @@ void Game::SetHDR(bool hdr)
         // render_path_->Append(cache_->GetResource< XMLFile >("PostProcess/FXAA2.xml"));
         // // render_path_->Append(cache_->GetResource<XMLFile>("PostProcess/ColorCorrection.xml"));
         // viewport->SetRenderPath(render_path_);
-        // render_path_->Load(cache_->GetResource<XMLFile>("MY/myForwardDepth.xml"));
-        // render_path_->SetEnabled("ao_only", false);
-        // render_path_->SetEnabled("ssao", false);
-        // render_path_->SetEnabled("oil_paint", true);
-        // render_path_->SetEnabled("edge_detect", true);
-        // render_path_->SetEnabled("posterization", false);
-        // render_path_->SetEnabled("FXAA3", false);
-        // render_path_->SetEnabled("film_grain", false);
-        render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/ForwardDepth.xml"));
-        render_path_->Append(cache_->GetResource< XMLFile >("MY/Toon.xml"));
-
+        render_path_->Load(cache_->GetResource< XMLFile >("MY/myForwardDepth.xml"));
+        render_path_->SetEnabled("ao_only", false);
+        render_path_->SetEnabled("ssao", false);
+        render_path_->SetEnabled("oil_paint", true);
+        render_path_->SetEnabled("edge_detect", true);
+        render_path_->SetEnabled("posterization", false);
+        render_path_->SetEnabled("FXAA3", false);
+        // render_path_->SetEnabled("film_grain", true);
+        // render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/ForwardDepth.xml"));
+        // render_path_->Append(cache_->GetResource< XMLFile >("MY/Toon.xml"));
         viewport->SetRenderPath(render_path_);
     }
 }
@@ -507,11 +506,11 @@ void Game::CreateScene()
     billboard_set->SetFaceCameraMode(FC_LOOKAT_XYZ);
 
     dest_node_ = scene_->CreateChild("ParkingDest");
-    auto g = dest_node_->CreateComponent<CustomGeometry>();
+    auto g = dest_node_->CreateComponent< CustomGeometry >();
     g->SetMaterial(parking_slot_sel_mat_);
 
     trajectory_node_ = scene_->CreateChild("Trajectory");
-    billboard_set = trajectory_node_->CreateComponent<BillboardSet>();
+    billboard_set = trajectory_node_->CreateComponent< BillboardSet >();
     auto t_m = cache_->GetResource< Material >("MY/bullet_icon.xml");
     billboard_set->SetMaterial(t_m);
     billboard_set->SetSorted(true);
@@ -920,7 +919,6 @@ void Game::UpdateTPCamera(float dt)
             target_dist_ = -1.0F;
         }
     }
-
 
     if (target_yaw_ >= -100.0F)
     {
@@ -1560,10 +1558,10 @@ void Game::DrawMotionPlanning(float dt)
     DrawSlot(car_status_.dest_slot, g);
     g->SetMaterial(parking_slot_sel_mat_);
 
-    auto* billboard_set = trajectory_node_->GetComponent<BillboardSet>();
+    auto* billboard_set = trajectory_node_->GetComponent< BillboardSet >();
     billboard_set->SetNumBillboards(car_status_.trajectory.points.Size());
 
-    for (auto i=0U; i<car_status_.trajectory.points.Size(); ++i)
+    for (auto i = 0U; i < car_status_.trajectory.points.Size(); ++i)
     {
         const auto& p = car_status_.trajectory.points[i];
         Billboard* bb = billboard_set->GetBillboard(i);
