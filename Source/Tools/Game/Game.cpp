@@ -37,7 +37,7 @@ static const int SET_IP = 2;
 static const int GAME_INIT = 3;
 
 const float turn_signal_flash_time = 0.5F;
-constexpr float parking_icon_h = 0.1F;
+constexpr float parking_icon_h = 0.25F;
 constexpr float parking_icon_size = 0.35F;
 constexpr float car_mesh_offset = 1.0F;
 constexpr float trajectory_icon_size = 0.2F;
@@ -339,14 +339,17 @@ void Game::SetHDR(bool hdr)
         // render_path_->Append(cache_->GetResource< XMLFile >("PostProcess/FXAA2.xml"));
         // // render_path_->Append(cache_->GetResource<XMLFile>("PostProcess/ColorCorrection.xml"));
         // viewport->SetRenderPath(render_path_);
-        render_path_->Load(cache_->GetResource<XMLFile>("MY/myForwardDepth.xml"));
-        render_path_->SetEnabled("ao_only", false);
-        render_path_->SetEnabled("ssao", false);
-        render_path_->SetEnabled("oil_paint", true);
-        render_path_->SetEnabled("edge_detect", true);
-        render_path_->SetEnabled("posterization", false);
-        render_path_->SetEnabled("FXAA3", false);
-        render_path_->SetEnabled("film_grain", false);
+        // render_path_->Load(cache_->GetResource<XMLFile>("MY/myForwardDepth.xml"));
+        // render_path_->SetEnabled("ao_only", false);
+        // render_path_->SetEnabled("ssao", false);
+        // render_path_->SetEnabled("oil_paint", true);
+        // render_path_->SetEnabled("edge_detect", true);
+        // render_path_->SetEnabled("posterization", false);
+        // render_path_->SetEnabled("FXAA3", false);
+        // render_path_->SetEnabled("film_grain", false);
+        render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/ForwardDepth.xml"));
+        render_path_->Append(cache_->GetResource< XMLFile >("MY/Toon.xml"));
+
         viewport->SetRenderPath(render_path_);
     }
 }
@@ -1565,6 +1568,7 @@ void Game::DrawMotionPlanning(float dt)
         const auto& p = car_status_.trajectory.points[i];
         Billboard* bb = billboard_set->GetBillboard(i);
         Vector3 pos = p;
+        pos.y_ = parking_icon_h;
         // printf ("pos=%s\n", pos.ToString().CString());
         bb->position_ = pos;
         bb->size_ = Vector2(trajectory_icon_size, trajectory_icon_size);
