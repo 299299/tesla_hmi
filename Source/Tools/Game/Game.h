@@ -63,7 +63,6 @@ struct ConfigData
     float camera_init_dist = 30.0F;
     float camera_init_pitch = 80.0F;
     float camera_reset_time = 5.0F;
-    float camera_init_pitch_tp = 75.0F;
 
     bool thumbnail = false;
     bool is_night = false;
@@ -117,7 +116,6 @@ class Game : public Sample
 
     void UpdateFPSCamera(float dt);
     void UpdateTPCamera(float dt);
-    void UpdateFixedCamera(float dt);
     void UpdateKeyInput(float dt);
 
     void DrawDebug();
@@ -135,8 +133,6 @@ class Game : public Sample
     bool Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& hitDrawable);
 
     void PickSlot(int x, int y);
-
-    Vector3 GetCameraTargetPos();
 
   private:
     String op_ip_address_;

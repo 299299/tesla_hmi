@@ -550,35 +550,12 @@ void Game::UpdateInput(float timeStep)
 
     UpdateDebugTouch(timeStep);
 
-    int target_cam_state = -1;
-    // if (car_status_.gear == GEAR_P || car_status_.gear == GEAR_N)
-    //     target_cam_state = kCameraFixed;
-    // else if (car_status_.gear == GEAR_R || car_status_.gear == GEAR_D)
-    //     target_cam_state = kCameraTP;
-    target_cam_state = kCameraTP;
-
-    if (target_cam_state != camera_state_)
-    {
-        camera_state_ = target_cam_state;
-
-        if (target_cam_state == kCameraFixed)
-        {
-            target_pitch_ = config_.camera_init_pitch;
-            target_dist_ = config_.camera_init_dist;
-        }
-        else if (target_cam_state == kCameraTP)
-        {
-            target_pitch_ = config_.camera_init_pitch_tp;
-            target_dist_ = config_.camera_init_dist;
-        }
-    }
+    camera_state_ = kCameraTP;
 
     if (camera_state_ == kCameraFPS)
         UpdateFPSCamera(timeStep);
     else if (camera_state_ == kCameraTP)
         UpdateTPCamera(timeStep);
-    else
-        UpdateFixedCamera(timeStep);
 
     UpdateKeyInput(timeStep);
 }
@@ -834,119 +811,20 @@ void Game::UpdateFPSCamera(float dt)
         cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * dt);
 }
 
-void Game::UpdateFixedCamera(float dt)
-{
-    camera_blend_speed_ = 0.05F;
-
-    Quaternion q(config_.camera_init_pitch, 0, 0.0f);
-    Vector3 target_pos = GetCameraTargetPos();
-    // Vector3 eye_pos = q * Vector3(0, 10.0, -3.0) + target_pos;
-    Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
-
-    auto cur_eye_pos = cameraNode_->GetPosition();
-    auto diff = (eye_pos - cur_eye_pos) * 0.1F;
-
-    cameraNode_->SetPosition(cur_eye_pos + diff);
-    cameraNode_->LookAt(target_pos);
-}
-
 void Game::UpdateTPCamera(float dt)
 {
-    camera_dist_ -= input_->GetMouseMoveWheel();
+    const Quaternion& rot = ego_node_->GetRotation();
+    Quaternion dir = rot * Quaternion(config_.camera_init_pitch, Vector3::RIGHT);
+    Vector3 aimPoint = ego_node_->GetPosition();
+    Vector3 rayDir = dir * Vector3::BACK;
+    float rayDistance = config_.camera_init_dist;
+    auto newPos = aimPoint + rayDir * rayDistance;
 
-    if (input_->GetNumTouches() == 0)
-        touch_up_time_ += dt;
-    else
+    if (car_status_.parking_state == 0)
     {
-        touch_up_time_ = 0.0F;
-        target_pitch_ = -999.0F;
-        target_yaw_ = -999.0F;
-        target_dist_ = -1.0F;
+        cameraNode_->SetPosition(newPos);
+        cameraNode_->SetRotation(dir);
     }
-
-    if (touch_up_time_ > config_.camera_reset_time)
-    {
-        target_pitch_ = config_.camera_init_pitch_tp;
-        target_dist_ = config_.camera_init_dist;
-        target_yaw_ = 0.0F;
-        touch_up_time_ = 0.0F;
-    }
-
-    // Zoom in/out
-    if (input_->GetNumTouches() == 2)
-    {
-        bool zoom = false;
-
-        TouchState* touch1 = input_->GetTouch(0);
-        TouchState* touch2 = input_->GetTouch(1);
-
-        // Check for zoom pattern (touches moving in opposite directions and on empty space)
-        if (!touch1->touchedElement_ && !touch2->touchedElement_ &&
-            ((touch1->delta_.y_ > 0 && touch2->delta_.y_ < 0) || (touch1->delta_.y_ < 0 && touch2->delta_.y_ > 0)))
-        {
-            zoom = true;
-        }
-        else
-            zoom = false;
-
-        if (zoom)
-        {
-            int sens = 0;
-            // Check for zoom direction (in/out)
-            if (Abs(touch1->position_.y_ - touch2->position_.y_) >
-                Abs(touch1->lastPosition_.y_ - touch2->lastPosition_.y_))
-                sens = -1;
-            else
-                sens = 1;
-            camera_dist_ += Abs(touch1->delta_.y_ - touch2->delta_.y_) * sens * TOUCH_SENSITIVITY / 50.0f;
-        }
-    }
-
-    if (target_pitch_ >= -100.0F)
-    {
-        auto diff = target_pitch_ - pitch_;
-        pitch_ += diff * CAMERA_MOVE_SPEED * dt;
-        if (std::abs(diff) < 0.1)
-        {
-            target_pitch_ = -999.0F;
-        }
-    }
-
-    if (target_dist_ >= 0.0F)
-    {
-        auto diff = target_dist_ - camera_dist_;
-        camera_dist_ += diff * CAMERA_MOVE_SPEED * dt;
-        if (std::abs(diff) < 0.1)
-        {
-            target_dist_ = -1.0F;
-        }
-    }
-
-    if (target_yaw_ >= -100.0F)
-    {
-        auto diff = target_yaw_ - yaw_;
-        yaw_ += diff * CAMERA_MOVE_SPEED * dt;
-        if (std::abs(diff) < 0.1)
-        {
-            target_yaw_ = -999.0F;
-        }
-    }
-
-    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
-    camera_dist_ = Clamp(camera_dist_, config_.camera_min_dist, config_.camera_max_dist);
-
-    Quaternion q(pitch_, yaw_, 0.0f);
-    Vector3 target_pos = GetCameraTargetPos();
-    Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
-
-    camera_blend_speed_ += camera_blend_acceleration_ * dt;
-    camera_blend_speed_ = Min(1.0F, camera_blend_speed_);
-
-    auto cur_eye_pos = cameraNode_->GetPosition();
-    auto diff = (eye_pos - cur_eye_pos) * camera_blend_speed_;
-
-    cameraNode_->SetPosition(cur_eye_pos + diff);
-    cameraNode_->LookAt(target_pos);
 }
 
 void Game::UpdateDebugTouch(float dt)
@@ -1601,16 +1479,4 @@ void Game::DrawMotionPlanning(float dt)
     //     ghost_nodes_[i]->SetWorldPosition(p);
     //     ghost_nodes_[i]->SetEnabledRecursive(true);
     // }
-}
-
-Vector3 Game::GetCameraTargetPos()
-{
-    if (car_status_.parking_state == 0)
-    {
-        Vector3 vTarget = ego_node_->GetWorldPosition();
-        auto diff = (vTarget - last_target_pos_) * 0.1F;
-        diff.y_ = 0;
-        last_target_pos_ += diff;
-    }
-    return last_target_pos_;
 }
