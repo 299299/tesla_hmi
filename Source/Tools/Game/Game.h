@@ -47,7 +47,7 @@ struct VehicleStatus
 
 struct ConfigData
 {
-    bool hdr = true;
+    bool hdr = false;
     bool debug = false;
     bool shadow = false;
     bool water_plane = false;
@@ -147,6 +147,7 @@ class Game : public Sample
     Light* front_light_;
     Light* tail_light_;
     Zone* zone_;
+    Node* zoneNode_;
 
     SharedPtr< RenderPath > render_path_;
 

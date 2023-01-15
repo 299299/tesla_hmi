@@ -349,7 +349,7 @@ void Game::SetHDR(bool hdr)
         // render_path_->SetEnabled("film_grain", true);
         // render_path_->Load(cache_->GetResource< XMLFile >("RenderPaths/ForwardDepth.xml"));
         // render_path_->Append(cache_->GetResource< XMLFile >("MY/Toon.xml"));
-        viewport->SetRenderPath(render_path_);
+        // viewport->SetRenderPath(render_path_);
     }
 }
 
@@ -438,6 +438,7 @@ void Game::CreateScene()
     zone->SetFogStart(50.0f);
     zone->SetFogEnd(150.0f);
     zone_ = zone;
+    zoneNode_ = zoneNode;
 
     Node* planeNode = scene_->CreateChild("Plane");
     planeNode->SetScale(Vector3(200.0f, 1.0f, 200.0f));
@@ -1023,6 +1024,8 @@ void Game::Draw3D(float dt)
     ego_node_->SetRotation(q);
 
     tail_light_->SetEnabled(car_status_.brake_lights);
+
+    zoneNode_->SetWorldPosition(ego_node_->GetWorldPosition());
 
     DrawSlots(dt);
     DrawMotionPlanning(dt);
