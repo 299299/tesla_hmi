@@ -237,4 +237,6 @@ class Game : public Sample
     Vector3 last_pick_pos_ = Vector3(-999.0F, 0, -999.0F);
     Sprite* start_button_;
     int parking_button_clicked_ = 0;
+
+    Vector3 camera_target_pos_ = Vector3::ZERO;
 };

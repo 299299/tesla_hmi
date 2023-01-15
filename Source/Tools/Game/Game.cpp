@@ -813,17 +813,26 @@ void Game::UpdateFPSCamera(float dt)
 
 void Game::UpdateTPCamera(float dt)
 {
-    const Quaternion& rot = ego_node_->GetRotation();
-    Quaternion dir = rot * Quaternion(config_.camera_init_pitch, Vector3::RIGHT);
-    Vector3 aimPoint = ego_node_->GetPosition();
-    Vector3 rayDir = dir * Vector3::BACK;
-    float rayDistance = config_.camera_init_dist;
-    auto newPos = aimPoint + rayDir * rayDistance;
+    auto pitch = config_.camera_init_pitch;
+    auto yaw = car_status_.yaw;
+    auto dist = config_.camera_init_dist;
+
+    Quaternion q(pitch, yaw, 0.0f);
+    auto target_pos = ego_node_->GetWorldPosition();
+    auto eye_pos = q * Vector3(0, 0, -dist) + target_pos;
+
+    auto cur_pos = cameraNode_->GetWorldPosition();
+    auto cur_target = camera_target_pos_;
+    float blend_speed = 0.1F;
+
+    auto set_eye_pos = Lerp(cur_pos, eye_pos, blend_speed);
+    auto set_target_pos = Lerp(cur_target, target_pos, blend_speed);
 
     if (car_status_.parking_state == 0)
     {
-        cameraNode_->SetPosition(newPos);
-        cameraNode_->SetRotation(dir);
+        cameraNode_->SetWorldPosition(set_eye_pos);
+        cameraNode_->LookAt(set_target_pos);
+        camera_target_pos_ = set_target_pos;
     }
 }
 
