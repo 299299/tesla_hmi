@@ -1357,7 +1357,7 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
     op_status_ = 1;
     message_time_ = time_->GetElapsedTime();
     const auto& json_root = json->GetRoot();
-    car_status_.speed_kmh = json_root.Get("speed").GetFloat() * 3.6F;
+    car_status_.speed_kmh = json_root.Get("speed").GetFloat();
     car_status_.gear = json_root.Get("gear").GetInt();
     car_status_.steering_wheel = json_root.Get("steering_wheel").GetFloat();
     car_status_.pos_x = json_root.Get("x").GetFloat();
@@ -1382,8 +1382,8 @@ void Game::HandleCustomMessage(SharedPtr< JSONFile > json)
 
 void Game::DrawSlots(float dt)
 {
-    parking_node_->SetPosition(ego_node_->GetPosition());
-    parking_node_->SetRotation(ego_node_->GetRotation());
+    // parking_node_->SetPosition(ego_node_->GetPosition());
+    // parking_node_->SetRotation(ego_node_->GetRotation());
 
     for (auto n : slot_nodes_)
     {
