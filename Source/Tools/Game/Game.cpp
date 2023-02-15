@@ -551,10 +551,26 @@ void Game::UpdateInput(float timeStep)
 
     UpdateDebugTouch(timeStep);
 
-    camera_state_ = kCameraTP;
+    auto target_camera_state = kCameraFixed;
 
-    if (camera_state_ == kCameraFPS)
-        UpdateFPSCamera(timeStep);
+    if (car_status_.gear == GEAR_P)
+    {
+        target_camera_state = kCameraFixed;
+    }
+    else
+    {
+        target_camera_state = kCameraTP;
+    }
+
+    if (camera_state_ != target_camera_state)
+    {
+        ResetTPCamera();
+    }
+
+    camera_state_ = target_camera_state;
+
+    if (camera_state_ == kCameraFixed)
+        UpdateFixedCamera(timeStep);
     else if (camera_state_ == kCameraTP)
         UpdateTPCamera(timeStep);
 
@@ -812,29 +828,115 @@ void Game::UpdateFPSCamera(float dt)
         cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * dt);
 }
 
+void Game::UpdateFixedCamera(float dt)
+{
+    camera_blend_speed_ = 0.05F;
+
+    Quaternion q(config_.camera_fixed_pitch, ego_node_->GetWorldRotation().EulerAngles().y_, 0.0f);
+    Vector3 target_pos = ego_node_->GetWorldPosition();  // Vector3(0, 2.0, 1.0);
+    Vector3 eye_pos = q * Vector3(0, 10.0, -3.0) + target_pos;
+
+    auto cur_eye_pos = cameraNode_->GetPosition();
+    auto diff = (eye_pos - cur_eye_pos) * 0.1F;
+
+    cameraNode_->SetPosition(cur_eye_pos + diff);
+    cameraNode_->LookAt(target_pos);
+}
+
 void Game::UpdateTPCamera(float dt)
 {
-    auto pitch = config_.camera_init_pitch;
-    auto yaw = car_status_.yaw;
-    auto dist = config_.camera_init_dist;
+    camera_dist_ -= input_->GetMouseMoveWheel();
 
-    Quaternion q(pitch, yaw, 0.0f);
-    auto target_pos = ego_node_->GetWorldPosition();
-    auto eye_pos = q * Vector3(0, 0, -dist) + target_pos;
-
-    auto cur_pos = cameraNode_->GetWorldPosition();
-    auto cur_target = camera_target_pos_;
-    float blend_speed = 0.1F;
-
-    auto set_eye_pos = Lerp(cur_pos, eye_pos, blend_speed);
-    auto set_target_pos = Lerp(cur_target, target_pos, blend_speed);
-
-    if (car_status_.parking_state == 0)
+    if (input_->GetNumTouches() == 0)
+        touch_up_time_ += dt;
+    else
     {
-        cameraNode_->SetWorldPosition(set_eye_pos);
-        cameraNode_->LookAt(set_target_pos);
-        camera_target_pos_ = set_target_pos;
+        touch_up_time_ = 0.0F;
+        target_dist_ = -1.0F;
+        target_yaw_valid = false;
+        target_pitch_valid = false;
     }
+
+    if (touch_up_time_ > config_.camera_reset_time)
+    {
+        ResetTPCamera();
+    }
+
+    // Zoom in/out
+    if (input_->GetNumTouches() == 2)
+    {
+        bool zoom = false;
+
+        TouchState* touch1 = input_->GetTouch(0);
+        TouchState* touch2 = input_->GetTouch(1);
+
+        // Check for zoom pattern (touches moving in opposite directions and on empty space)
+        if (!touch1->touchedElement_ && !touch2->touchedElement_ &&
+            ((touch1->delta_.y_ > 0 && touch2->delta_.y_ < 0) || (touch1->delta_.y_ < 0 && touch2->delta_.y_ > 0)))
+        {
+            zoom = true;
+        }
+        else
+            zoom = false;
+
+        if (zoom)
+        {
+            int sens = 0;
+            // Check for zoom direction (in/out)
+            if (Abs(touch1->position_.y_ - touch2->position_.y_) >
+                Abs(touch1->lastPosition_.y_ - touch2->lastPosition_.y_))
+                sens = -1;
+            else
+                sens = 1;
+            camera_dist_ += Abs(touch1->delta_.y_ - touch2->delta_.y_) * sens * TOUCH_SENSITIVITY / 50.0f;
+        }
+    }
+
+    if (target_pitch_valid)
+    {
+        auto diff = target_pitch_ - pitch_;
+        pitch_ += diff * CAMERA_MOVE_SPEED * dt;
+        if (std::abs(diff) < 0.1)
+        {
+            target_pitch_valid = false;
+        }
+    }
+
+    if (target_dist_ >= 0.0F)
+    {
+        auto diff = target_dist_ - camera_dist_;
+        camera_dist_ += diff * CAMERA_MOVE_SPEED * dt;
+        if (std::abs(diff) < 0.1)
+        {
+            target_dist_ = -1.0F;
+        }
+    }
+
+    if (target_yaw_valid)
+    {
+        auto diff = target_yaw_ - yaw_;
+        yaw_ += diff * CAMERA_MOVE_SPEED * dt;
+        if (std::abs(diff) < 0.1)
+        {
+            target_yaw_valid = false;
+        }
+    }
+
+    pitch_ = Clamp(pitch_, -90.0f, 90.0f);
+    camera_dist_ = Clamp(camera_dist_, config_.camera_min_dist, config_.camera_max_dist);
+
+    Quaternion q(pitch_, yaw_, 0.0f);
+    Vector3 target_pos = Vector3(0, 2.0, 1.0);
+    Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
+
+    camera_blend_speed_ += camera_blend_acceleration_ * dt;
+    camera_blend_speed_ = Min(1.0F, camera_blend_speed_);
+
+    auto cur_eye_pos = cameraNode_->GetPosition();
+    auto diff = (eye_pos - cur_eye_pos) * camera_blend_speed_;
+
+    cameraNode_->SetPosition(cur_eye_pos + diff);
+    cameraNode_->LookAt(target_pos);
 }
 
 void Game::UpdateDebugTouch(float dt)
@@ -1491,4 +1593,14 @@ void Game::DrawMotionPlanning(float dt)
     //     ghost_nodes_[i]->SetWorldPosition(p);
     //     ghost_nodes_[i]->SetEnabledRecursive(true);
     // }
+}
+
+void Game::ResetTPCamera()
+{
+    target_pitch_ = config_.camera_init_pitch;
+    target_dist_ = config_.camera_init_dist;
+    target_yaw_ = ego_node_->GetWorldRotation().EulerAngles().y_;
+    touch_up_time_ = 0.0F;
+    target_yaw_valid = true;
+    target_pitch_valid = true;
 }

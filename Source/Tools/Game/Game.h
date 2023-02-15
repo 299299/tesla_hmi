@@ -60,8 +60,9 @@ struct ConfigData
     float camera_min_dist = 4.0;
     float camera_max_dist = 50.0;
 
-    float camera_init_dist = 30.0F;
-    float camera_init_pitch = 80.0F;
+    float camera_init_dist = 40.0F;
+    float camera_fixed_pitch = 16.0F;
+    float camera_init_pitch = 64.0F;
     float camera_reset_time = 5.0F;
 
     bool thumbnail = false;
@@ -116,6 +117,8 @@ class Game : public Sample
 
     void UpdateFPSCamera(float dt);
     void UpdateTPCamera(float dt);
+    void UpdateFixedCamera(float dt);
+
     void UpdateKeyInput(float dt);
 
     void DrawDebug();
@@ -133,6 +136,8 @@ class Game : public Sample
     bool Raycast(int x, int y, float maxDistance, Vector3& hitPos, Drawable*& hitDrawable);
 
     void PickSlot(int x, int y);
+
+    void ResetTPCamera();
 
   private:
     String op_ip_address_;
@@ -188,6 +193,9 @@ class Game : public Sample
     int camera_state_;
     float camera_blend_speed_;
     float camera_blend_acceleration_;
+
+    bool target_yaw_valid = false;
+    bool target_pitch_valid = false;
 
     Urho3D::String sync_str_;
 
