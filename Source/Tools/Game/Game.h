@@ -61,7 +61,7 @@ struct ConfigData
     float camera_max_dist = 50.0;
 
     float camera_init_dist = 40.0F;
-    float camera_fixed_pitch = 16.0F;
+    float camera_fixed_pitch = 0.0F;
     float camera_init_pitch = 64.0F;
     float camera_reset_time = 5.0F;
 
@@ -193,6 +193,8 @@ class Game : public Sample
     int camera_state_;
     float camera_blend_speed_;
     float camera_blend_acceleration_;
+
+    Vector3 last_ego_pos_;
 
     bool target_yaw_valid = false;
     bool target_pitch_valid = false;

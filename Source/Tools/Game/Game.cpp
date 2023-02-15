@@ -834,7 +834,7 @@ void Game::UpdateFixedCamera(float dt)
 
     Quaternion q(config_.camera_fixed_pitch, ego_node_->GetWorldRotation().EulerAngles().y_, 0.0f);
     Vector3 target_pos = ego_node_->GetWorldPosition();  // Vector3(0, 2.0, 1.0);
-    Vector3 eye_pos = q * Vector3(0, 10.0, -3.0) + target_pos;
+    Vector3 eye_pos = q * Vector3(0, 15.0, 0.0) + target_pos;
 
     auto cur_eye_pos = cameraNode_->GetPosition();
     auto diff = (eye_pos - cur_eye_pos) * 0.1F;
@@ -926,9 +926,17 @@ void Game::UpdateTPCamera(float dt)
     camera_dist_ = Clamp(camera_dist_, config_.camera_min_dist, config_.camera_max_dist);
 
     Quaternion q(pitch_, yaw_, 0.0f);
-    Vector3 target_pos = Vector3(0, 2.0, 1.0);
-    Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
+    Vector3 target_pos = ego_node_->GetWorldPosition();  // Vector3(0, 2.0, 1.0);
+    if (car_status_.parking_state > 1)
+    {
+        target_pos = last_ego_pos_;
+    }
+    else
+    {
+        last_ego_pos_ = target_pos;
+    }
 
+    Vector3 eye_pos = q * Vector3(0, 0, -camera_dist_) + target_pos;
     camera_blend_speed_ += camera_blend_acceleration_ * dt;
     camera_blend_speed_ = Min(1.0F, camera_blend_speed_);
 
